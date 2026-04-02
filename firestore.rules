@@ -1,0 +1,131 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: teachers
+    // Fields: name (string), email (string, optional), cpf (string, optional), phone (string, optional), photoUrl (string, optional), linkedin (string, optional), lattes (string, optional), instagram (string, optional), specialties (list)
+    //
+    // Collection: courses
+    // Fields: name (string), marketingSummary (string, optional), imageUrl (string, optional), specificDisciplines (list of strings)
+    //
+    // Collection: holidays
+    // Fields: date (string, YYYY-MM-DD), description (string)
+    //
+    // Collection: schedules
+    // Fields: courseIds (list), startDate (string), status (string), createdAt (timestamp)
+    //
+    // Collection: classes
+    // Fields: scheduleId (string), date (string), disciplineName (string), teacherId (string), courseId (string), order (int), isCommon (bool)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.uid == "g0jsC6oh0ogC9leMzevt17i7cvF3" ||
+        request.auth.token.email == "emanoel.s.amorim@gmail.com"
+      );
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidDateString(dateStr) {
+      return dateStr is string && dateStr.matches("^\\d{4}-\\d{2}-\\d{2}$");
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+    function isValidTeacher(data) {
+      return data.name is string && data.name.size() > 0 &&
+             (!('email' in data) || (data.email is string)) &&
+             (!('cpf' in data) || data.cpf is string) &&
+             (!('phone' in data) || data.phone is string) &&
+             (!('photoUrl' in data) || data.photoUrl is string) &&
+             (!('linkedin' in data) || data.linkedin is string) &&
+             (!('lattes' in data) || data.lattes is string) &&
+             (!('instagram' in data) || data.instagram is string);
+    }
+
+    function isValidCourse(data) {
+      return data.name is string && data.name.size() > 0 &&
+             data.specificDisciplines is list &&
+             (!('marketingSummary' in data) || data.marketingSummary is string) &&
+             (!('imageUrl' in data) || data.imageUrl is string) &&
+             (!('createdAt' in data) || data.createdAt is timestamp);
+    }
+
+    function isValidHoliday(data) {
+      return isValidDateString(data.date) && data.description is string;
+    }
+
+    function isValidSchedule(data) {
+      return data.courseIds is list && data.courseIds.size() > 0 &&
+             isValidDateString(data.startDate) &&
+             data.status in ['active', 'archived'] &&
+             (!('createdAt' in data) || data.createdAt is timestamp);
+    }
+
+    function isValidClass(data) {
+      return data.scheduleId is string &&
+             isValidDateString(data.date) &&
+             data.disciplineName is string &&
+             data.order is int &&
+             data.isCommon is bool;
+    }
+
+    // ===============================================================
+    // Match Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow write: if isAdmin();
+    }
+
+    match /teachers/{teacherId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && isValidTeacher(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /courses/{courseId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && isValidCourse(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /holidays/{holidayId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && isValidHoliday(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /schedules/{scheduleId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && isValidSchedule(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /classes/{classId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && isValidClass(request.resource.data);
+      allow delete: if isAdmin();
+    }
+  }
+}

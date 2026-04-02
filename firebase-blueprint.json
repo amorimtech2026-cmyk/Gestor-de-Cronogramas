@@ -1,0 +1,92 @@
+{
+  "entities": {
+    "Teacher": {
+      "title": "Teacher",
+      "description": "Docente da pós-graduação",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Nome completo" },
+        "email": { "type": "string", "format": "email", "description": "E-mail de contato (opcional)" },
+        "cpf": { "type": "string", "description": "CPF do docente (opcional)" },
+        "phone": { "type": "string", "description": "Telefone de contato (opcional)" },
+        "photoUrl": { "type": "string", "description": "URL da foto do docente (opcional)" },
+        "linkedin": { "type": "string", "description": "Link do perfil no LinkedIn (opcional)" },
+        "lattes": { "type": "string", "description": "Link do currículo Lattes (opcional)" },
+        "instagram": { "type": "string", "description": "Link do perfil no Instagram (opcional)" },
+        "specialties": { 
+          "type": "array", 
+          "items": { 
+            "type": "object",
+            "properties": {
+              "courseId": { "type": "string" },
+              "disciplineName": { "type": "string" }
+            }
+          },
+          "description": "Disciplinas que o docente pode ministrar" 
+        }
+      },
+      "required": ["name"]
+    },
+    "Course": {
+      "title": "Course",
+      "description": "Curso de pós-graduação",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Nome do curso" },
+        "marketingSummary": { "type": "string", "description": "Resumo de marketing/propaganda do curso (opcional)" },
+        "imageUrl": { "type": "string", "description": "URL da imagem de capa do curso (opcional)" },
+        "specificDisciplines": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Lista das 9 disciplinas específicas"
+        }
+      },
+      "required": ["name", "specificDisciplines"]
+    },
+    "Holiday": {
+      "title": "Holiday",
+      "description": "Feriado que bloqueia aulas",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string", "format": "date", "description": "Data do feriado (YYYY-MM-DD)" },
+        "description": { "type": "string", "description": "Nome do feriado" }
+      },
+      "required": ["date", "description"]
+    },
+    "Schedule": {
+      "title": "Schedule",
+      "description": "Cronograma de uma turma (grupo de cursos)",
+      "type": "object",
+      "properties": {
+        "courseIds": { "type": "array", "items": { "type": "string" }, "description": "IDs dos 3 cursos agrupados" },
+        "startDate": { "type": "string", "format": "date", "description": "Data de início das aulas" },
+        "status": { "type": "string", "enum": ["active", "archived"], "description": "Status do cronograma" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["courseIds", "startDate", "status"]
+    },
+    "ClassSession": {
+      "title": "ClassSession",
+      "description": "Sessão individual de aula (um sábado)",
+      "type": "object",
+      "properties": {
+        "scheduleId": { "type": "string", "description": "ID do cronograma pai" },
+        "date": { "type": "string", "format": "date", "description": "Data da aula" },
+        "disciplineName": { "type": "string", "description": "Nome da disciplina" },
+        "teacherId": { "type": "string", "description": "ID do docente" },
+        "courseId": { "type": "string", "description": "ID do curso (se for específica) ou 'all' (se for comum)" },
+        "courseName": { "type": "string", "description": "Nome do curso para exibição rápida" },
+        "order": { "type": "integer", "description": "Ordem da disciplina (1-18)" },
+        "isCommon": { "type": "boolean", "description": "Se é uma disciplina comum" }
+      },
+      "required": ["scheduleId", "date", "disciplineName", "order", "isCommon"]
+    }
+  },
+  "firestore": {
+    "teachers": { "schema": "Teacher", "description": "Coleção de professores" },
+    "courses": { "schema": "Course", "description": "Coleção de cursos" },
+    "holidays": { "schema": "Holiday", "description": "Coleção de feriados" },
+    "schedules": { "schema": "Schedule", "description": "Coleção de cronogramas mestres" },
+    "classes": { "schema": "ClassSession", "description": "Coleção de sessões de aula individuais" }
+  }
+}

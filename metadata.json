@@ -1,0 +1,5 @@
+{
+  "name": "Teste Gestor de Cronogramas Esuda R03",
+  "description": "Plataforma para gestão automatizada de cronogramas de pós-graduação com regras de feriados e turmas integradas.",
+  "requestFramePermissions": []
+}
