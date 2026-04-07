@@ -74,7 +74,7 @@ export function generateFullSchedule(
   const schedule: any[] = [];
   let currentSaturday = getNextAvailableSaturday(startDate, holidays);
 
-  // 1. Common Disciplines (9 disciplines, 2 saturdays each)
+  // 1. Common Disciplines (2 saturdays each)
   for (let i = 0; i < COMMON_DISCIPLINES.length; i++) {
     const discipline = COMMON_DISCIPLINES[i];
     
@@ -102,24 +102,26 @@ export function generateFullSchedule(
     currentSaturday = getNextAvailableSaturday(addDays(currentSaturday, 7), holidays);
   }
 
-  // 2. Specific Disciplines (9 disciplines per course, 2 saturdays each)
-  // After the 9th common discipline, courses split.
+  // 2. Specific Disciplines (2 saturdays each)
+  // After the common disciplines, courses split.
   // We'll generate them in parallel for the UI to show the split.
   
   const specificSchedules: Record<string, any[]> = {};
+  const commonCount = COMMON_DISCIPLINES.length;
   courseNames.forEach(courseName => {
     specificSchedules[courseName] = [];
     let courseSaturday = currentSaturday; // Start from where common ended
     const disciplines = specificDisciplinesByCourse[courseName] || [];
+    const numDisciplines = disciplines.length;
 
-    for (let i = 0; i < 9; i++) {
+    for (let i = 0; i < numDisciplines; i++) {
       const disciplineName = disciplines[i] || `Disciplina Específica ${i + 1}`;
       
       // First Saturday
       specificSchedules[courseName].push({
         date: format(courseSaturday, 'yyyy-MM-dd'),
         disciplineName: disciplineName,
-        order: i + 10,
+        order: i + commonCount + 1,
         isCommon: false,
         courseId: courseName
       });
@@ -130,9 +132,90 @@ export function generateFullSchedule(
       specificSchedules[courseName].push({
         date: format(courseSaturday, 'yyyy-MM-dd'),
         disciplineName: disciplineName,
-        order: i + 10,
+        order: i + commonCount + 1,
         isCommon: false,
         courseId: courseName
+      });
+
+      courseSaturday = getNextAvailableSaturday(addDays(courseSaturday, 7), holidays);
+    }
+  });
+
+  return {
+    common: schedule,
+    specific: specificSchedules
+  };
+}
+
+export function generateFullScheduleWithOrder(
+  startDateStr: string,
+  coursesData: { id: string, name: string, disciplines: string[] }[],
+  commonDisciplines: { name: string, modality: string }[],
+  holidays: Holiday[]
+) {
+  const startDate = parseISO(startDateStr);
+  const schedule: any[] = [];
+  let currentSaturday = getNextAvailableSaturday(startDate, holidays);
+
+  // 1. Common Disciplines
+  for (let i = 0; i < commonDisciplines.length; i++) {
+    const discipline = commonDisciplines[i];
+    
+    // First Saturday
+    schedule.push({
+      date: format(currentSaturday, 'yyyy-MM-dd'),
+      disciplineName: discipline.name,
+      order: i + 1,
+      isCommon: true,
+      courseId: 'all',
+      courseName: 'Fase Comum'
+    });
+
+    currentSaturday = getNextAvailableSaturday(addDays(currentSaturday, 7), holidays);
+    
+    // Second Saturday
+    schedule.push({
+      date: format(currentSaturday, 'yyyy-MM-dd'),
+      disciplineName: discipline.name,
+      order: i + 1,
+      isCommon: true,
+      courseId: 'all',
+      courseName: 'Fase Comum'
+    });
+
+    currentSaturday = getNextAvailableSaturday(addDays(currentSaturday, 7), holidays);
+  }
+
+  // 2. Specific Disciplines
+  const specificSchedules: Record<string, any[]> = {};
+  coursesData.forEach(course => {
+    specificSchedules[course.id] = [];
+    let courseSaturday = currentSaturday;
+    const disciplines = course.disciplines;
+
+    for (let i = 0; i < disciplines.length; i++) {
+      const disciplineName = disciplines[i];
+      
+      // First Saturday
+      specificSchedules[course.id].push({
+        date: format(courseSaturday, 'yyyy-MM-dd'),
+        disciplineName: disciplineName,
+        order: i + commonDisciplines.length + 1,
+        isCommon: false,
+        courseId: course.id,
+        courseName: course.name
+      });
+
+      courseSaturday = getNextAvailableSaturday(addDays(courseSaturday, 7), holidays);
+
+      // Second Saturday
+      specificSchedules[course.id].push({
+        date: format(courseSaturday, 'yyyy-MM-dd'),
+        disciplineName: disciplineName,
+        order: i + commonDisciplines.length + 1,
+        isCommon: false,
+        courseId: course.id,
+        courseName: course.name
       });
 
       courseSaturday = getNextAvailableSaturday(addDays(courseSaturday, 7), holidays);

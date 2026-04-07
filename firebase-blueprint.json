@@ -34,7 +34,17 @@
       "properties": {
         "name": { "type": "string", "description": "Nome do curso" },
         "marketingSummary": { "type": "string", "description": "Resumo de marketing/propaganda do curso (opcional)" },
+        "fullDescription": { "type": "string", "description": "Descrição completa/texto publicitário (opcional)" },
         "imageUrl": { "type": "string", "description": "URL da imagem de capa do curso (opcional)" },
+        "workload": { "type": "string", "description": "Carga horária (ex: 360h)" },
+        "format": { "type": "string", "description": "Formato (ex: Presencial, Remoto)" },
+        "classDays": { "type": "string", "description": "Dias de aula (ex: Sábados)" },
+        "classTime": { "type": "string", "description": "Horário das aulas (ex: 08:00 - 17:00)" },
+        "duration": { "type": "string", "description": "Duração do curso (ex: 10 meses)" },
+        "enrollmentPeriod": { "type": "string", "description": "Período de inscrições (ex: 15/12/25 até 28/03/26)" },
+        "startDateInfo": { "type": "string", "description": "Informação de início das aulas (ex: 30/01/26)" },
+        "enrollmentStatus": { "type": "string", "description": "Status de matrículas (ex: Abertas, Em andamento)" },
+        "websiteUrl": { "type": "string", "description": "Link oficial do curso no site da ESUDA (opcional)" },
         "specificDisciplines": {
           "type": "array",
           "items": { "type": "string" },

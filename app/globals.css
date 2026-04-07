@@ -47,127 +47,323 @@
   }
 }
 
-/* html2canvas / html2pdf.js compatibility for oklch colors */
-#schedule-content {
-  /* Force standard colors for the export area to avoid oklch parsing errors */
-  --indigo-50: #f5f7ff;
-  --indigo-100: #e0e7ff;
-  --indigo-500: #6366f1;
-  --indigo-600: #4f46e5;
-  --indigo-700: #4338ca;
-  --indigo-900: #312e81;
-  --amber-50: #fffbeb;
-  --amber-100: #fef3c7;
-  --amber-500: #f59e0b;
-  --amber-600: #d97706;
-  --amber-700: #b45309;
-  --gray-50: #f9fafb;
-  --gray-100: #f3f4f6;
-  --gray-200: #e5e7eb;
-  --gray-300: #d1d5db;
-  --gray-400: #9ca3af;
-  --gray-500: #6b7280;
-  --gray-600: #4b5563;
-  --gray-700: #374151;
-  --gray-800: #1f2937;
-  --gray-900: #111827;
-  --white: #ffffff;
-  --black: #000000;
+/* html2canvas / html2pdf.js compatibility for oklch and oklab colors */
+#schedule-content, #public-schedule-pdf, .pdf-export-area,
+#marketing-catalog-content, #landing-page-content,
+#print-table-content, #public-print-table-content,
+#schedule-content *, #public-schedule-pdf *, .pdf-export-area *,
+#marketing-catalog-content *, #landing-page-content *,
+#print-table-content *, #public-print-table-content * {
+  /* Force standard colors for the export area to avoid oklch/oklab parsing errors */
+  --indigo-50: #f5f7ff !important;
+  --indigo-100: #e0e7ff !important;
+  --indigo-200: #c7d2fe !important;
+  --indigo-300: #a5b4fc !important;
+  --indigo-400: #818cf8 !important;
+  --indigo-500: #6366f1 !important;
+  --indigo-600: #4f46e5 !important;
+  --indigo-700: #4338ca !important;
+  --indigo-800: #3730a3 !important;
+  --indigo-900: #312e81 !important;
   
-  /* Override Tailwind v4 internal variables if they exist */
+  --amber-50: #fffbeb !important;
+  --amber-100: #fef3c7 !important;
+  --amber-200: #fde68a !important;
+  --amber-300: #fcd34d !important;
+  --amber-400: #fbbf24 !important;
+  --amber-500: #f59e0b !important;
+  --amber-600: #d97706 !important;
+  --amber-700: #b45309 !important;
+  
+  --gray-50: #f9fafb !important;
+  --gray-100: #f3f4f6 !important;
+  --gray-200: #e5e7eb !important;
+  --gray-300: #d1d5db !important;
+  --gray-400: #9ca3af !important;
+  --gray-500: #6b7280 !important;
+  --gray-600: #4b5563 !important;
+  --gray-700: #374151 !important;
+  --gray-800: #1f2937 !important;
+  --gray-900: #111827 !important;
+  
+  --slate-50: #f8fafc !important;
+  --slate-100: #f1f5f9 !important;
+  --slate-200: #e2e8f0 !important;
+  --slate-300: #cbd5e1 !important;
+  --slate-400: #94a3b8 !important;
+  --slate-500: #64748b !important;
+  --slate-600: #475569 !important;
+  --slate-700: #334155 !important;
+  --slate-800: #1e293b !important;
+  --slate-900: #0f172a !important;
+
+  --white: #ffffff !important;
+  --black: #000000 !important;
+  
+  /* Override Tailwind v4 internal variables */
   --color-white: #ffffff !important;
   --color-black: #000000 !important;
   --color-indigo-50: #f5f7ff !important;
   --color-indigo-100: #e0e7ff !important;
+  --color-indigo-200: #c7d2fe !important;
+  --color-indigo-300: #a5b4fc !important;
+  --color-indigo-400: #818cf8 !important;
+  --color-indigo-500: #6366f1 !important;
   --color-indigo-600: #4f46e5 !important;
+  --color-indigo-700: #4338ca !important;
+  --color-indigo-800: #3730a3 !important;
   --color-indigo-900: #312e81 !important;
+  
   --color-amber-50: #fffbeb !important;
   --color-amber-100: #fef3c7 !important;
+  --color-amber-200: #fde68a !important;
+  --color-amber-300: #fcd34d !important;
+  --color-amber-400: #fbbf24 !important;
+  --color-amber-500: #f59e0b !important;
   --color-amber-600: #d97706 !important;
+  --color-amber-700: #b45309 !important;
+  
   --color-gray-50: #f9fafb !important;
   --color-gray-100: #f3f4f6 !important;
   --color-gray-200: #e5e7eb !important;
+  --color-gray-300: #d1d5db !important;
   --color-gray-400: #9ca3af !important;
+  --color-gray-500: #6b7280 !important;
   --color-gray-600: #4b5563 !important;
   --color-gray-700: #374151 !important;
+  --color-gray-800: #1f2937 !important;
   --color-gray-900: #111827 !important;
+
   --color-red-50: #fef2f2 !important;
   --color-red-100: #fee2e2 !important;
   --color-red-500: #ef4444 !important;
   --color-red-600: #dc2626 !important;
+  
   --color-green-50: #f0fdf4 !important;
   --color-green-100: #dcfce7 !important;
   --color-green-500: #22c55e !important;
   --color-green-600: #16a34a !important;
+  
   --color-blue-50: #eff6ff !important;
   --color-blue-100: #dbeafe !important;
   --color-blue-500: #3b82f6 !important;
   --color-blue-600: #2563eb !important;
+  
+  --color-sky-50: #f0f9ff !important;
+  --color-sky-100: #e0f2fe !important;
+  --color-sky-500: #0ea5e9 !important;
+  --color-sky-600: #0284c7 !important;
+
+  --color-rose-50: #fff1f2 !important;
+  --color-rose-100: #ffe4e6 !important;
+  --color-rose-500: #f43f5e !important;
+  --color-rose-600: #e11d48 !important;
+
+  --color-emerald-50: #ecfdf5 !important;
+  --color-emerald-100: #d1fae5 !important;
+  --color-emerald-500: #10b981 !important;
+  --color-emerald-600: #059669 !important;
+
+  --color-cyan-50: #ecfeff !important;
+  --color-cyan-100: #cffafe !important;
+  --color-cyan-500: #06b6d4 !important;
+  --color-cyan-600: #0891b2 !important;
+
+  --color-violet-50: #f5f3ff !important;
+  --color-violet-100: #ede9fe !important;
+  --color-violet-500: #8b5cf6 !important;
+  --color-violet-600: #7c3aed !important;
+
+  --color-fuchsia-50: #fdf4ff !important;
+  --color-fuchsia-100: #fae8ff !important;
+  --color-fuchsia-500: #d946ef !important;
+  --color-fuchsia-600: #c026d3 !important;
+  
+  --color-purple-50: #faf5ff !important;
+  --color-purple-100: #f3e8ff !important;
+  --color-purple-500: #a855f7 !important;
+  --color-purple-600: #9333ea !important;
+
+  --color-pink-50: #fdf2f8 !important;
+  --color-pink-100: #fce7f3 !important;
+  --color-pink-500: #ec4899 !important;
+  --color-pink-600: #db2777 !important;
+
+  --color-orange-50: #fff7ed !important;
+  --color-orange-100: #ffedd5 !important;
+  --color-orange-500: #f97316 !important;
+  --color-orange-600: #ea580c !important;
+
+  --color-yellow-50: #fefce8 !important;
+  --color-yellow-100: #fef9c3 !important;
+  --color-yellow-500: #eab308 !important;
+  --color-yellow-600: #ca8a04 !important;
+
+  --color-teal-50: #f0fdfa !important;
+  --color-teal-100: #ccfbf1 !important;
+  --color-teal-500: #14b8a6 !important;
+  --color-teal-600: #0d9488 !important;
+
+  --color-zinc-50: #fafafa !important;
+  --color-zinc-100: #f4f4f5 !important;
+  --color-zinc-200: #e4e4e7 !important;
+  --color-zinc-300: #d4d4d8 !important;
+  --color-zinc-400: #a1a1aa !important;
+  --color-zinc-500: #71717a !important;
+  --color-zinc-600: #52525b !important;
+  --color-zinc-700: #3f3f46 !important;
+  --color-zinc-800: #27272a !important;
+  --color-zinc-900: #18181b !important;
+
+  /* Reset any potential oklch/oklab variables to safe fallbacks */
+  --tw-shadow: 0 0 #0000 !important;
+  --tw-shadow-colored: 0 0 #0000 !important;
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+  --tw-ring-color: #e5e7eb !important;
+  --tw-border-opacity: 1 !important;
+  --tw-bg-opacity: 1 !important;
+  --tw-text-opacity: 1 !important;
+  --tw-outline-color: #e5e7eb !important;
+  --tw-ring-offset-color: #ffffff !important;
+
+  /* Force standard colors for all common Tailwind properties */
+  color: inherit;
+  background-color: inherit;
+  border-color: #e5e7eb;
+  outline-color: #e5e7eb;
+  text-decoration-color: inherit;
+  accent-color: #4f46e5;
+  caret-color: #4f46e5;
+  fill: currentColor;
+  stroke: currentColor;
+
+  /* Prevent oklch from leaking through border-color */
+  border-color: #e5e7eb !important;
+  overflow: visible !important;
 }
 
-#schedule-content, #schedule-content * {
-  /* Prevent oklch from leaking through variables */
-  border-color: currentColor;
+.pdf-export-area .bg-white { background-color: #ffffff !important; }
+.pdf-export-area .text-white { color: #ffffff !important; }
+.pdf-export-area .bg-indigo-600 { background-color: #4f46e5 !important; }
+.pdf-export-area .text-indigo-900 { color: #312e81 !important; }
+.pdf-export-area .text-indigo-700 { color: #4338ca !important; }
+.pdf-export-area .text-indigo-600 { color: #4f46e5 !important; }
+.pdf-export-area .text-indigo-400 { color: #818cf8 !important; }
+.pdf-export-area .text-indigo-100 { color: #e0e7ff !important; }
+.pdf-export-area .bg-indigo-50 { background-color: #f5f7ff !important; }
+.pdf-export-area .bg-indigo-50\/50 { background-color: #fafbff !important; }
+.pdf-export-area .bg-indigo-50\/30 { background-color: #fcfdff !important; }
+.pdf-export-area .bg-indigo-100 { background-color: #e0e7ff !important; }
+.pdf-export-area .border-indigo-600 { border-color: #4f46e5 !important; }
+.pdf-export-area .border-indigo-100 { border-color: #e0e7ff !important; }
+
+.pdf-export-area .bg-amber-600 { background-color: #d97706 !important; }
+.pdf-export-area .text-amber-600 { color: #d97706 !important; }
+.pdf-export-area .text-amber-700 { color: #b45309 !important; }
+.pdf-export-area .text-amber-400 { color: #fbbf24 !important; }
+.pdf-export-area .bg-amber-100 { background-color: #fef3c7 !important; }
+.pdf-export-area .bg-amber-50 { background-color: #fffbeb !important; }
+.pdf-export-area .bg-amber-50\/30 { background-color: #fffdf5 !important; }
+.pdf-export-area .border-amber-100 { border-color: #fef3c7 !important; }
+
+.pdf-export-area .bg-gray-50 { background-color: #f9fafb !important; }
+.pdf-export-area .bg-gray-50\/30 { background-color: #fdfdfe !important; }
+.pdf-export-area .bg-gray-100 { background-color: #f3f4f6 !important; }
+.pdf-export-area .bg-red-50 { background-color: #fef2f2 !important; }
+.pdf-export-area .bg-red-100 { background-color: #fee2e2 !important; }
+.pdf-export-area .bg-red-500\/20 { background-color: #fecaca !important; }
+.pdf-export-area .bg-green-100 { background-color: #dcfce7 !important; }
+.pdf-export-area .bg-green-500\/20 { background-color: #bbf7d0 !important; }
+.pdf-export-area .text-red-500 { color: #ef4444 !important; }
+.pdf-export-area .text-red-100 { color: #fee2e2 !important; }
+.pdf-export-area .text-green-100 { color: #dcfce7 !important; }
+.pdf-export-area .text-gray-400 { color: #9ca3af !important; }
+.pdf-export-area .text-gray-500 { color: #6b7280 !important; }
+.pdf-export-area .text-gray-600 { color: #4b5563 !important; }
+.pdf-export-area .text-gray-700 { color: #374151 !important; }
+.pdf-export-area .text-gray-800 { color: #1f2937 !important; }
+.pdf-export-area .text-gray-900 { color: #111827 !important; }
+.pdf-export-area .border-gray-100 { border-color: #f3f4f6 !important; }
+.pdf-export-area .border-gray-200 { border-color: #e5e7eb !important; }
+.pdf-export-area .border-gray-300 { border-color: #d1d5db !important; }
+.pdf-export-area .border-none { border-style: none !important; }
+
+.pdf-export-area button {
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  cursor: default !important;
 }
 
-#schedule-content .bg-white { background-color: #ffffff !important; }
-#schedule-content .text-white { color: #ffffff !important; }
-#schedule-content .bg-indigo-600 { background-color: #4f46e5 !important; }
-#schedule-content .text-indigo-900 { color: #312e81 !important; }
-#schedule-content .text-indigo-700 { color: #4338ca !important; }
-#schedule-content .text-indigo-600 { color: #4f46e5 !important; }
-#schedule-content .text-indigo-400 { color: #818cf8 !important; }
-#schedule-content .text-indigo-100 { color: #e0e7ff !important; }
-#schedule-content .bg-indigo-50 { background-color: #f5f7ff !important; }
-#schedule-content .bg-indigo-50\/50 { background-color: #fafbff !important; }
-#schedule-content .bg-indigo-50\/30 { background-color: #fcfdff !important; }
-#schedule-content .bg-indigo-100 { background-color: #e0e7ff !important; }
-#schedule-content .border-indigo-600 { border-color: #4f46e5 !important; }
-#schedule-content .border-indigo-100 { border-color: #e0e7ff !important; }
+.pdf-export-area .grid {
+  display: block !important;
+}
 
-#schedule-content .bg-amber-600 { background-color: #d97706 !important; }
-#schedule-content .text-amber-600 { color: #d97706 !important; }
-#schedule-content .text-amber-700 { color: #b45309 !important; }
-#schedule-content .text-amber-400 { color: #fbbf24 !important; }
-#schedule-content .bg-amber-100 { background-color: #fef3c7 !important; }
-#schedule-content .bg-amber-50 { background-color: #fffbeb !important; }
-#schedule-content .bg-amber-50\/30 { background-color: #fffdf5 !important; }
-#schedule-content .border-amber-100 { border-color: #fef3c7 !important; }
+.pdf-export-area .grid > div {
+  margin-bottom: 1rem !important;
+  page-break-inside: avoid !important;
+  height: auto !important;
+  min-height: 150px !important;
+  overflow: visible !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
 
-#schedule-content .bg-gray-50 { background-color: #f9fafb !important; }
-#schedule-content .bg-gray-50\/30 { background-color: #fdfdfe !important; }
-#schedule-content .bg-gray-100 { background-color: #f3f4f6 !important; }
-#schedule-content .bg-red-50 { background-color: #fef2f2 !important; }
-#schedule-content .bg-red-100 { background-color: #fee2e2 !important; }
-#schedule-content .bg-red-500\/20 { background-color: #fecaca !important; }
-#schedule-content .bg-green-100 { background-color: #dcfce7 !important; }
-#schedule-content .bg-green-500\/20 { background-color: #bbf7d0 !important; }
-#schedule-content .text-red-500 { color: #ef4444 !important; }
-#schedule-content .text-red-100 { color: #fee2e2 !important; }
-#schedule-content .text-green-100 { color: #dcfce7 !important; }
-#schedule-content .text-gray-400 { color: #9ca3af !important; }
-#schedule-content .text-gray-500 { color: #6b7280 !important; }
-#schedule-content .text-gray-600 { color: #4b5563 !important; }
-#schedule-content .text-gray-700 { color: #374151 !important; }
-#schedule-content .text-gray-800 { color: #1f2937 !important; }
-#schedule-content .text-gray-900 { color: #111827 !important; }
-#schedule-content .border-gray-100 { border-color: #f3f4f6 !important; }
-#schedule-content .border-gray-200 { border-color: #e5e7eb !important; }
-#schedule-content .border-gray-300 { border-color: #d1d5db !important; }
-#schedule-content .border-none { border-style: none !important; }
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #cbd5e1;
+}
+
+.pdf-export-area .pdf-text-full {
+  display: block !important;
+  -webkit-line-clamp: none !important;
+  overflow: visible !important;
+  white-space: normal !important;
+  line-height: 1.4 !important;
+}
 
 /* Disable shadows and rings which often use oklch in v4 */
-#schedule-content .shadow-sm,
-#schedule-content .shadow,
-#schedule-content .shadow-md,
-#schedule-content .shadow-lg,
-#schedule-content .shadow-xl,
-#schedule-content .shadow-2xl,
-#schedule-content .shadow-inner {
+#schedule-content .shadow-sm, #public-schedule-pdf .shadow-sm, .pdf-export-area .shadow-sm,
+#marketing-catalog-content .shadow-sm, #landing-page-content .shadow-sm,
+#print-table-content .shadow-sm, #public-print-table-content .shadow-sm,
+#schedule-content .shadow, #public-schedule-pdf .shadow, .pdf-export-area .shadow,
+#marketing-catalog-content .shadow, #landing-page-content .shadow,
+#print-table-content .shadow, #public-print-table-content .shadow,
+#schedule-content .shadow-md, #public-schedule-pdf .shadow-md, .pdf-export-area .shadow-md,
+#marketing-catalog-content .shadow-md, #landing-page-content .shadow-md,
+#print-table-content .shadow-md, #public-print-table-content .shadow-md,
+#schedule-content .shadow-lg, #public-schedule-pdf .shadow-lg, .pdf-export-area .shadow-lg,
+#marketing-catalog-content .shadow-lg, #landing-page-content .shadow-lg,
+#print-table-content .shadow-lg, #public-print-table-content .shadow-lg,
+#schedule-content .shadow-xl, #public-schedule-pdf .shadow-xl, .pdf-export-area .shadow-xl,
+#marketing-catalog-content .shadow-xl, #landing-page-content .shadow-xl,
+#print-table-content .shadow-xl, #public-print-table-content .shadow-xl,
+#schedule-content .shadow-2xl, #public-schedule-pdf .shadow-2xl, .pdf-export-area .shadow-2xl,
+#marketing-catalog-content .shadow-2xl, #landing-page-content .shadow-2xl,
+#print-table-content .shadow-2xl, #public-print-table-content .shadow-2xl,
+#schedule-content .shadow-inner, #public-schedule-pdf .shadow-inner, .pdf-export-area .shadow-inner,
+#marketing-catalog-content .shadow-inner, #landing-page-content .shadow-inner,
+#print-table-content .shadow-inner, #public-print-table-content .shadow-inner {
   box-shadow: none !important;
 }
 
-#schedule-content [class*="ring-"] {
+#schedule-content [class*="ring-"], #public-schedule-pdf [class*="ring-"], .pdf-export-area [class*="ring-"],
+#marketing-catalog-content [class*="ring-"], #landing-page-content [class*="ring-"],
+#print-table-content [class*="ring-"], #public-print-table-content [class*="ring-"] {
   --tw-ring-color: #e0e7ff !important;
   box-shadow: none !important;
 }
