@@ -18,17 +18,118 @@ export const COMMON_DISCIPLINES = [
 ];
 
 export const HOLIDAYS_2026: Holiday[] = [
-  { date: '2026-02-16', description: 'Carnaval' },
+  { date: '2026-01-01', description: 'Confraternização Universal' },
+  { date: '2026-02-16', description: 'Carnaval (Segunda)' },
+  { date: '2026-02-17', description: 'Carnaval (Terça)' },
   { date: '2026-03-06', description: 'Data Magna de PE' },
   { date: '2026-04-03', description: 'Sexta-feira Santa' },
+  { date: '2026-04-21', description: 'Tiradentes' },
   { date: '2026-05-01', description: 'Dia do Trabalho' },
+  { date: '2026-06-04', description: 'Corpus Christi' },
+  { date: '2026-06-24', description: 'São João' },
+  { date: '2026-07-16', description: 'Nossa Senhora do Carmo' },
   { date: '2026-09-07', description: 'Independência' },
   { date: '2026-10-12', description: 'N. Sra. Aparecida' },
   { date: '2026-10-19', description: 'Dia do Comerciário Recife' },
   { date: '2026-11-02', description: 'Finados' },
+  { date: '2026-11-15', description: 'Proclamação da República' },
   { date: '2026-11-20', description: 'Consciência Negra' },
+  { date: '2026-12-08', description: 'Nossa Senhora da Conceição' },
   { date: '2026-12-25', description: 'Natal' }
 ];
+
+export const HOLIDAYS_2027: Holiday[] = [
+  { date: '2027-01-01', description: 'Confraternização Universal' },
+  { date: '2027-02-08', description: 'Carnaval (Segunda)' },
+  { date: '2027-02-09', description: 'Carnaval (Terça)' },
+  { date: '2027-03-06', description: 'Data Magna de PE' },
+  { date: '2027-03-26', description: 'Paixão de Cristo' },
+  { date: '2027-04-21', description: 'Tiradentes' },
+  { date: '2027-05-01', description: 'Dia do Trabalhador' },
+  { date: '2027-05-27', description: 'Corpus Christi' },
+  { date: '2027-06-24', description: 'São João' },
+  { date: '2027-07-16', description: 'Nossa Senhora do Carmo' },
+  { date: '2027-09-07', description: 'Independência do Brasil' },
+  { date: '2027-10-12', description: 'Nossa Senhora Aparecida' },
+  { date: '2027-10-18', description: 'Dia do Comerciário Recife' },
+  { date: '2027-11-02', description: 'Finados' },
+  { date: '2027-11-15', description: 'Proclamação da República' },
+  { date: '2027-11-20', description: 'Dia da Consciência Negra' },
+  { date: '2027-12-08', description: 'Nossa Senhora da Conceição' },
+  { date: '2027-12-25', description: 'Natal' }
+];
+
+export function getHolidaysForYear(year: number): Holiday[] {
+  // Fixed holidays
+  const fixed = [
+    { month: 1, day: 1, desc: 'Confraternização Universal' },
+    { month: 3, day: 6, desc: 'Data Magna de PE' },
+    { month: 4, day: 21, desc: 'Tiradentes' },
+    { month: 5, day: 1, desc: 'Dia do Trabalho' },
+    { month: 6, day: 24, desc: 'São João' },
+    { month: 7, day: 16, desc: 'Nossa Senhora do Carmo' },
+    { month: 9, day: 7, desc: 'Independência' },
+    { month: 10, day: 12, desc: 'N. Sra. Aparecida' },
+    { month: 11, day: 2, desc: 'Finados' },
+    { month: 11, day: 15, desc: 'Proclamação da República' },
+    { month: 11, day: 20, desc: 'Consciência Negra' },
+    { month: 12, day: 8, desc: 'Nossa Senhora da Conceição' },
+    { month: 12, day: 25, desc: 'Natal' },
+  ];
+
+  const holidays: Holiday[] = fixed.map(h => ({
+    date: `${year}-${String(h.month).padStart(2, '0')}-${String(h.day).padStart(2, '0')}`,
+    description: h.desc
+  }));
+
+  // Variable holidays (Easter based)
+  // Simple Easter calculation (Butcher's Algorithm)
+  const a = year % 19;
+  const b = Math.floor(year / 100);
+  const c = year % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31);
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+
+  const easter = new Date(year, month - 1, day);
+  
+  const addDaysToDate = (date: Date, days: number) => {
+    const result = new Date(date);
+    result.setDate(result.getDate() + days);
+    return result;
+  };
+
+  const formatDate = (date: Date) => format(date, 'yyyy-MM-dd');
+
+  const sextaSanta = addDaysToDate(easter, -2);
+  const carnavalSegunda = addDaysToDate(easter, -48);
+  const carnavalTerca = addDaysToDate(easter, -47);
+  const corpusChristi = addDaysToDate(easter, 60);
+
+  holidays.push({ date: formatDate(sextaSanta), description: 'Sexta-feira Santa' });
+  holidays.push({ date: formatDate(carnavalSegunda), description: 'Carnaval (Segunda)' });
+  holidays.push({ date: formatDate(carnavalTerca), description: 'Carnaval (Terça)' });
+  holidays.push({ date: formatDate(corpusChristi), description: 'Corpus Christi' });
+
+  // Dia do Comerciário (3rd Monday of October)
+  let comerciario = new Date(year, 9, 1); // Oct 1
+  let mondayCount = 0;
+  while (mondayCount < 3) {
+    if (comerciario.getDay() === 1) mondayCount++;
+    if (mondayCount < 3) comerciario.setDate(comerciario.getDate() + 1);
+  }
+  holidays.push({ date: formatDate(comerciario), description: 'Dia do Comerciário Recife' });
+
+  return holidays.sort((a, b) => a.date.localeCompare(b.date));
+}
 
 export function isHoliday(date: Date, holidays: Holiday[]): boolean {
   const dateStr = format(date, 'yyyy-MM-dd');
@@ -73,6 +174,17 @@ export function generateFullSchedule(
   const startDate = parseISO(startDateStr);
   const schedule: any[] = [];
   let currentSaturday = getNextAvailableSaturday(startDate, holidays);
+
+  // 0. Aula Inaugural
+  schedule.push({
+    date: format(currentSaturday, 'yyyy-MM-dd'),
+    disciplineName: "Aula Inaugural",
+    order: 0,
+    isCommon: true,
+    courseId: 'all'
+  });
+
+  currentSaturday = getNextAvailableSaturday(addDays(currentSaturday, 7), holidays);
 
   // 1. Common Disciplines (2 saturdays each)
   for (let i = 0; i < COMMON_DISCIPLINES.length; i++) {
@@ -139,6 +251,15 @@ export function generateFullSchedule(
 
       courseSaturday = getNextAvailableSaturday(addDays(courseSaturday, 7), holidays);
     }
+
+    // 3. Cerimônia de Encerramento
+    specificSchedules[courseName].push({
+      date: format(courseSaturday, 'yyyy-MM-dd'),
+      disciplineName: "Cerimônia de Encerramento",
+      order: numDisciplines + commonCount + 1,
+      isCommon: false,
+      courseId: courseName
+    });
   });
 
   return {
@@ -157,6 +278,18 @@ export function generateFullScheduleWithOrder(
   const schedule: any[] = [];
   let currentSaturday = getNextAvailableSaturday(startDate, holidays);
 
+  // 0. Aula Inaugural
+  schedule.push({
+    date: format(currentSaturday, 'yyyy-MM-dd'),
+    disciplineName: "Aula Inaugural",
+    order: 0,
+    isCommon: true,
+    courseId: 'all',
+    courseName: 'Fase Comum'
+  });
+
+  currentSaturday = getNextAvailableSaturday(addDays(currentSaturday, 7), holidays);
+
   // 1. Common Disciplines
   for (let i = 0; i < commonDisciplines.length; i++) {
     const discipline = commonDisciplines[i];
@@ -166,6 +299,7 @@ export function generateFullScheduleWithOrder(
       date: format(currentSaturday, 'yyyy-MM-dd'),
       disciplineName: discipline.name,
       order: i + 1,
+      classNumber: 1,
       isCommon: true,
       courseId: 'all',
       courseName: 'Fase Comum'
@@ -178,6 +312,7 @@ export function generateFullScheduleWithOrder(
       date: format(currentSaturday, 'yyyy-MM-dd'),
       disciplineName: discipline.name,
       order: i + 1,
+      classNumber: 2,
       isCommon: true,
       courseId: 'all',
       courseName: 'Fase Comum'
@@ -201,6 +336,7 @@ export function generateFullScheduleWithOrder(
         date: format(courseSaturday, 'yyyy-MM-dd'),
         disciplineName: disciplineName,
         order: i + commonDisciplines.length + 1,
+        classNumber: 1,
         isCommon: false,
         courseId: course.id,
         courseName: course.name
@@ -213,6 +349,7 @@ export function generateFullScheduleWithOrder(
         date: format(courseSaturday, 'yyyy-MM-dd'),
         disciplineName: disciplineName,
         order: i + commonDisciplines.length + 1,
+        classNumber: 2,
         isCommon: false,
         courseId: course.id,
         courseName: course.name
@@ -220,6 +357,16 @@ export function generateFullScheduleWithOrder(
 
       courseSaturday = getNextAvailableSaturday(addDays(courseSaturday, 7), holidays);
     }
+
+    // 3. Cerimônia de Encerramento
+    specificSchedules[course.id].push({
+      date: format(courseSaturday, 'yyyy-MM-dd'),
+      disciplineName: "Cerimônia de Encerramento",
+      order: disciplines.length + commonDisciplines.length + 1,
+      isCommon: false,
+      courseId: course.id,
+      courseName: course.name
+    });
   });
 
   return {

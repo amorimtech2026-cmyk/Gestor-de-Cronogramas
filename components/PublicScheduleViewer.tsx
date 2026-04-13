@@ -33,6 +33,24 @@ export function PublicScheduleViewer({ schedule, courses, teachers, holidays, on
   const [scheduleData, setScheduleData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTeacher, setSelectedTeacher] = useState<any>(null);
+  const [isIframe, setIsIframe] = useState(false);
+
+  const ID_NAME_MAPPING: Record<string, string> = {
+    'KuQdvQvzYMo9EAofehxQ': 'Engenharia Legal e Perícias: Avaliações e Desempenho',
+    '8ehU2wioAdBWxFOn0Fo8': 'Engenharia e Gestão da Manutenção Predial na Construção 4.0'
+  };
+
+  const getCourseName = (cid: string, idx: number, scheduleNames?: string[]) => {
+    const course = courses.find((x: any) => x.id === cid);
+    if (course) return course.name;
+    if (ID_NAME_MAPPING[cid]) return ID_NAME_MAPPING[cid];
+    return scheduleNames?.[idx] || 'Curso';
+  };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsIframe(window.self !== window.top);
+  }, []);
 
   useEffect(() => {
     const q = query(collection(db, 'classes'), where('scheduleId', '==', schedule.id));
@@ -103,33 +121,8 @@ export function PublicScheduleViewer({ schedule, courses, teachers, holidays, on
   const selectedCourse = courses.find((c: any) => c.id === selectedCourseId);
 
   // PDF Export
-  const exportPDF = async () => {
-    const html2pdf = (await import('html2pdf.js')).default;
-    const element = document.getElementById('public-print-table-content');
-    if (!element) return;
-    
-    // Temporarily show the element for capture
-    element.style.display = 'block';
-    element.style.position = 'static';
-    element.style.visibility = 'visible';
-
-    const opt = {
-      margin: [10, 10],
-      filename: `Cronograma_${selectedCourse?.name}_${schedule.className}.pdf`,
-      image: { type: 'jpeg' as const, quality: 0.98 },
-      html2canvas: { 
-        scale: 2, 
-        useCORS: true,
-        logging: false,
-        letterRendering: true
-      },
-      jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const }
-    };
-
-    html2pdf().set(opt).from(element).save().then(() => {
-      // Hide it again
-      element.style.display = 'none';
-    });
+  const exportPDF = () => {
+    window.print();
   };
 
   return (
@@ -139,45 +132,50 @@ export function PublicScheduleViewer({ schedule, courses, teachers, holidays, on
         animate={{ opacity: 1, y: 0 }}
         className="h-full flex flex-col"
       >
-        <div className="p-4 sm:p-8 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-indigo-700 text-white shrink-0">
+        <div className="p-4 sm:p-8 border-b border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-[#0f172a] text-white shrink-0 no-print">
           <div className="flex items-center gap-4">
-            <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+            <button onClick={onClose} className="p-2 hover:bg-slate-800 rounded-lg transition-colors">
               <ChevronLeft className="w-8 h-8" />
             </button>
             <div>
-              <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">{schedule.className}</h2>
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                <p className="text-indigo-100 text-sm font-medium">Cronograma Acadêmico Detalhado (Tempo Real)</p>
+              <h2 className="text-2xl sm:text-3xl font-black tracking-tighter uppercase leading-none">{schedule.className}</h2>
+              <div className="flex items-center gap-2 mt-1">
+                <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
+                <p className="text-slate-400 text-sm font-bold uppercase tracking-widest">Cronograma Acadêmico (Tempo Real)</p>
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <Button variant="secondary" onClick={exportPDF} className="flex-1 sm:flex-none bg-white text-indigo-700 hover:bg-indigo-50 border-none shadow-lg">
-              <Download className="w-4 h-4" /> Exportar PDF
+          <div className="flex flex-col items-end gap-2 w-full sm:w-auto">
+            <Button variant="secondary" onClick={exportPDF} className="w-full sm:w-auto bg-amber-500 text-slate-900 hover:bg-amber-600 border-none shadow-2xl font-black uppercase tracking-tighter">
+              <Download className="w-4 h-4" /> Gerar PDF
             </Button>
+            {isIframe && (
+              <span className="text-[9px] font-black text-amber-500 uppercase tracking-widest animate-pulse">
+                Use nova aba para imprimir
+              </span>
+            )}
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-8">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-10 bg-slate-50">
           {/* Course Selector */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <span className="text-sm font-bold text-gray-500 uppercase tracking-wider">Filtrar por Curso:</span>
-            <div className="flex flex-wrap gap-2">
-              {schedule.courseIds.map((cid: string) => {
-                const c = courses.find((x: any) => x.id === cid);
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 no-print">
+            <span className="text-xs font-black text-slate-500 uppercase tracking-[0.2em]">Filtrar por Curso:</span>
+            <div className="flex flex-wrap gap-3">
+              {schedule.courseIds.map((cid: string, idx: number) => {
+                const courseName = getCourseName(cid, idx, schedule.courseNames);
                 const active = selectedCourseId === cid;
                 return (
                   <button
                     key={cid}
                     onClick={() => setSelectedCourseId(cid)}
-                    className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                    className={`px-6 py-2.5 rounded-lg text-xs font-black transition-all uppercase tracking-tight ${
                       active 
-                        ? 'bg-indigo-600 text-white shadow-md' 
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        ? 'bg-slate-900 text-white shadow-xl border border-slate-800' 
+                        : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
                     }`}
                   >
-                    {c?.name}
+                    {courseName}
                   </button>
                 );
               })}
@@ -185,26 +183,35 @@ export function PublicScheduleViewer({ schedule, courses, teachers, holidays, on
           </div>
 
           {/* Calendar Grid */}
-          <div id="public-schedule-pdf" className="bg-white p-4 rounded-2xl border border-gray-100 pdf-export-area">
+          <div id="public-schedule-pdf" className="bg-white p-8 rounded-xl border border-slate-200 shadow-xl">
             {/* Hidden Print Table for Public View */}
-            <div id="public-print-table-content" style={{ display: 'none' }} className="bg-white text-black font-sans">
-              <div className="mb-8 border-b-2 border-indigo-600 pb-4">
-                <h1 className="text-2xl font-bold text-indigo-900">Cronograma de Aulas - Pós-Graduação Esuda</h1>
-                <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
-                  <p><span className="font-bold">Curso:</span> {selectedCourse?.name}</p>
-                  <p><span className="font-bold">Turma:</span> {schedule.className}</p>
-                  <p><span className="font-bold">Data de Início:</span> {format(new Date(schedule.startDate + 'T12:00:00'), 'dd/MM/yyyy', { locale: ptBR })}</p>
-                  <p><span className="font-bold">Emitido em:</span> {format(new Date(), 'dd/MM/yyyy HH:mm')}</p>
+            <div id="public-print-table-content" className="hidden print:block bg-white text-black font-sans">
+              <div className="mb-10 border-b-4 border-slate-900 pb-6">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tighter leading-none">Cronograma de Aulas</h1>
+                    <p className="text-amber-600 font-black uppercase tracking-[0.3em] mt-2">Pós-Graduação Faculdade Esuda</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Emitido em</p>
+                    <p className="text-xs font-bold">{format(new Date(), 'dd/MM/yyyy HH:mm')}</p>
+                  </div>
+                </div>
+                <div className="mt-8 grid grid-cols-2 gap-6 text-xs bg-slate-50 p-6 rounded-lg border border-slate-100">
+                  <p><span className="font-black uppercase text-slate-400 tracking-tighter mr-2">Curso:</span> <span className="font-bold text-slate-900">{getCourseName(selectedCourseId, schedule.courseIds.indexOf(selectedCourseId), schedule.courseNames)}</span></p>
+                  <p><span className="font-black uppercase text-slate-400 tracking-tighter mr-2">Turma:</span> <span className="font-bold text-slate-900">{schedule.className}</span></p>
+                  <p><span className="font-black uppercase text-slate-400 tracking-tighter mr-2">Início:</span> <span className="font-bold text-slate-900">{schedule.startDate ? format(new Date(schedule.startDate + 'T12:00:00'), 'dd/MM/yyyy', { locale: ptBR }) : 'A definir'}</span></p>
+                  <p><span className="font-black uppercase text-slate-400 tracking-tighter mr-2">Local:</span> <span className="font-bold text-slate-900">Recife/PE</span></p>
                 </div>
               </div>
 
-              <table className="w-full border-collapse border border-gray-300 text-[10px]">
+              <table className="w-full border-collapse border border-slate-300 text-[10px]">
                 <thead>
-                  <tr className="bg-indigo-600 text-white">
-                    <th className="border border-gray-300 p-2 text-left w-20">Data</th>
-                    <th className="border border-gray-300 p-2 text-left">Disciplina</th>
-                    <th className="border border-gray-300 p-2 text-left w-40">Professor</th>
-                    <th className="border border-gray-300 p-2 text-left w-24">Tipo</th>
+                  <tr className="bg-slate-900 text-white">
+                    <th className="border border-slate-300 p-3 text-left w-24 uppercase tracking-widest font-black">Data</th>
+                    <th className="border border-slate-300 p-3 text-left uppercase tracking-widest font-black">Disciplina</th>
+                    <th className="border border-slate-300 p-3 text-left w-48 uppercase tracking-widest font-black">Professor</th>
+                    <th className="border border-slate-300 p-3 text-left w-28 uppercase tracking-widest font-black">Eixo</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -212,10 +219,10 @@ export function PublicScheduleViewer({ schedule, courses, teachers, holidays, on
                     if (item.type === 'holiday') {
                       return (
                         <tr key={`holiday-${idx}`} className="bg-red-50">
-                          <td className="border border-gray-300 p-2 font-bold text-red-600">
+                          <td className="border border-slate-300 p-3 font-black text-red-600">
                             {format(new Date(item.date + 'T12:00:00'), 'dd/MM/yyyy', { locale: ptBR })}
                           </td>
-                          <td colSpan={3} className="border border-gray-300 p-2 font-bold text-red-600 uppercase">
+                          <td colSpan={3} className="border border-slate-300 p-3 font-black text-red-600 uppercase tracking-tight">
                             FERIADO: {item.description}
                           </td>
                         </tr>
@@ -224,18 +231,18 @@ export function PublicScheduleViewer({ schedule, courses, teachers, holidays, on
                     
                     const teacher = teachers.find((t: any) => t.id === item.teacherId);
                     return (
-                      <tr key={`discipline-${idx}`} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                        <td className="border border-gray-300 p-2 font-medium">
+                      <tr key={`discipline-${idx}`} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
+                        <td className="border border-slate-300 p-3 font-bold text-slate-900">
                           {item.dates.sort().map((d: string) => format(new Date(d + 'T12:00:00'), 'dd/MM/yyyy', { locale: ptBR })).join(' e ')}
                         </td>
-                        <td className="border border-gray-300 p-2">
-                          <div className="font-bold">{item.name}</div>
+                        <td className="border border-slate-300 p-3">
+                          <div className="font-black text-slate-900 uppercase tracking-tight">{item.name}</div>
                         </td>
-                        <td className="border border-gray-300 p-2">
-                          {teacher?.name || 'Não atribuído'}
+                        <td className="border border-slate-300 p-3">
+                          <div className="font-bold text-slate-700">{teacher?.name || 'A definir'}</div>
                         </td>
-                        <td className="border border-gray-300 p-2 text-[9px]">
-                          {item.isCommon ? 'Comum' : 'Específica'}
+                        <td className="border border-slate-300 p-3 text-[9px] font-black uppercase tracking-tighter text-slate-400">
+                          {item.isCommon ? 'Tronco Comum' : 'Específica'}
                         </td>
                       </tr>
                     );
@@ -243,50 +250,54 @@ export function PublicScheduleViewer({ schedule, courses, teachers, holidays, on
                 </tbody>
               </table>
 
-              <div className="mt-12 pt-8 border-t border-gray-200 text-center text-[9px] text-gray-400">
-                <p>Este documento é um cronograma oficial da pós-graduação Esuda.</p>
-                <p className="mt-1">© {new Date().getFullYear()} Esuda Acadêmico - Todos os direitos reservados.</p>
+              <div className="mt-16 pt-10 border-t border-slate-200 text-center text-[9px] text-slate-400 font-black uppercase tracking-[0.3em]">
+                <p>Documento Oficial - Pós-Graduação Faculdade Esuda</p>
+                <p className="mt-2">© {new Date().getFullYear()} Esuda Acadêmico - Excelência em Educação</p>
               </div>
             </div>
 
             {loading ? (
-              <div className="flex flex-col items-center justify-center py-20 gap-4">
-                <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-                <p className="text-gray-500 font-medium">Carregando cronograma...</p>
+              <div className="flex flex-col items-center justify-center py-20 gap-4 no-print">
+                <div className="w-12 h-12 border-4 border-slate-900 border-t-amber-500 rounded-full animate-spin" />
+                <p className="text-slate-500 font-black uppercase tracking-widest text-xs">Sincronizando Cronograma...</p>
               </div>
             ) : (
-              <>
-                <div className="mb-6 text-center space-y-1">
-                  <h3 className="text-xl font-bold text-gray-900">{selectedCourse?.name}</h3>
-                  <p className="text-sm text-gray-500">
-                    Turma: {schedule.className} | Início: {format(new Date(schedule.startDate), 'dd/MM/yyyy', { locale: ptBR })}
+              <div className="no-print">
+                <div className="mb-10 text-center space-y-2">
+                  <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter leading-tight">
+                    {getCourseName(selectedCourseId, schedule.courseIds.indexOf(selectedCourseId), schedule.courseNames)}
+                  </h3>
+                  <div className="flex items-center justify-center gap-4">
+                    <p className="text-sm text-slate-500 font-bold uppercase tracking-widest">
+                      Turma: {schedule.className} | Início: {schedule.startDate ? format(new Date(schedule.startDate + 'T12:00:00'), 'dd/MM/yyyy', { locale: ptBR }) : 'A definir'}
+                    </p>
                     {schedule.lastUpdated && (
-                      <span className="ml-2 text-[10px] text-gray-400 italic">
-                        (Atualizado em: {format(schedule.lastUpdated.toDate(), 'dd/MM/yyyy HH:mm', { locale: ptBR })})
+                      <span className="text-[10px] text-slate-400 font-black uppercase tracking-tight bg-slate-50 px-2 py-1 rounded">
+                        Atualizado: {typeof schedule.lastUpdated.toDate === 'function' ? format(schedule.lastUpdated.toDate(), 'dd/MM/yyyy HH:mm', { locale: ptBR }) : 'Recentemente'}
                       </span>
                     )}
-                  </p>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {scheduleData.map((item: any, idx: number) => {
                     if (item.type === 'holiday') {
                       return (
                         <div 
                           key={`holiday-${idx}`}
-                          className="relative p-4 rounded-2xl border bg-red-50 border-red-100"
+                          className="relative p-6 rounded-xl border bg-red-50 border-red-100 shadow-sm"
                         >
-                          <div className="flex justify-between items-start mb-2">
-                            <span className="text-lg font-bold text-gray-900">
+                          <div className="flex justify-between items-start mb-3">
+                            <span className="text-xl font-black text-slate-900">
                               {format(new Date(item.date + 'T12:00:00'), 'dd/MM', { locale: ptBR })}
                             </span>
-                            <span className="text-[10px] font-bold text-gray-400 uppercase">
+                            <span className="text-[10px] font-black text-red-400 uppercase tracking-widest">
                               {format(new Date(item.date + 'T12:00:00'), 'EEEE', { locale: ptBR })}
                             </span>
                           </div>
                           <div className="flex items-center gap-2 text-red-600">
                             <AlertCircle className="w-4 h-4" />
-                            <span className="text-xs font-bold uppercase">{item.description}</span>
+                            <span className="text-xs font-black uppercase tracking-tight">{item.description}</span>
                           </div>
                         </div>
                       );
@@ -298,40 +309,40 @@ export function PublicScheduleViewer({ schedule, courses, teachers, holidays, on
                     return (
                       <div 
                         key={`discipline-${idx}`}
-                        className="relative p-4 rounded-2xl border bg-white border-gray-100 hover:border-indigo-300 hover:shadow-md transition-all flex flex-col"
+                        className="relative p-6 rounded-xl border bg-white border-slate-200 hover:border-amber-500 hover:shadow-2xl transition-all flex flex-col group"
                       >
-                        <div className="flex flex-wrap gap-x-3 gap-y-1 items-start mb-3">
+                        <div className="flex flex-wrap gap-x-3 gap-y-1 items-start mb-4">
                           {sortedDates.map((date: string, dIdx: number) => (
-                            <div key={date} className="flex items-center gap-1">
-                              <span className="text-lg font-bold text-gray-900">
+                            <div key={`${date}-${dIdx}`} className="flex items-center gap-1">
+                              <span className="text-xl font-black text-slate-900 group-hover:text-amber-600 transition-colors">
                                 {format(new Date(date + 'T12:00:00'), 'dd/MM', { locale: ptBR })}
                               </span>
-                              {dIdx < sortedDates.length - 1 && <span className="text-gray-300 font-bold">e</span>}
+                              {dIdx < sortedDates.length - 1 && <span className="text-slate-300 font-black">&</span>}
                             </div>
                           ))}
                         </div>
 
-                        <div className="space-y-3 flex-1">
+                        <div className="space-y-4 flex-1">
                           <div>
-                            <p className="text-xs font-bold text-indigo-600 uppercase tracking-tighter mb-1">
-                              {item.isCommon ? 'Tronco Comum' : 'Específica'}
+                            <p className="text-[10px] font-black text-amber-600 uppercase tracking-[0.2em] mb-1">
+                              {item.isCommon ? 'Tronco Comum' : 'Eixo Específico'}
                             </p>
-                            <p className="text-sm font-bold text-gray-800 leading-tight pdf-text-full">{item.name}</p>
+                            <p className="text-sm font-black text-slate-800 leading-tight uppercase tracking-tight">{item.name}</p>
                           </div>
                           {teacher && (
                             <button 
                               onClick={() => setSelectedTeacher(teacher)}
-                              className="flex items-center gap-2 pt-2 border-t border-gray-50 mt-auto w-full text-left hover:bg-gray-50 transition-colors group relative"
+                              className="flex items-center gap-3 pt-4 border-t border-slate-100 mt-auto w-full text-left hover:bg-slate-50 transition-colors group/teacher"
                             >
-                              <div className="w-6 h-6 rounded-full bg-gray-100 overflow-hidden shrink-0 border border-gray-200 group-hover:border-indigo-300 transition-colors">
+                              <div className="w-8 h-8 rounded-lg bg-slate-100 overflow-hidden shrink-0 border border-slate-200 group-hover/teacher:border-amber-500 transition-colors">
                                 {teacher.photoUrl ? (
-                                  <Image src={teacher.photoUrl} alt={teacher.name} width={24} height={24} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                                  <Image src={teacher.photoUrl} alt={teacher.name} width={32} height={32} className="w-full h-full object-cover grayscale group-hover/teacher:grayscale-0 transition-all" referrerPolicy="no-referrer" />
                                 ) : (
-                                  <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-gray-400">{teacher.name[0]}</div>
+                                  <div className="w-full h-full flex items-center justify-center text-xs font-black text-slate-400">{teacher.name[0]}</div>
                                 )}
                               </div>
-                              <span className="text-xs text-gray-600 truncate font-medium group-hover:text-indigo-600 transition-colors flex-1 pdf-text-full">{teacher.name}</span>
-                              <Share2 className="w-3 h-3 text-gray-300 group-hover:text-indigo-500 opacity-0 group-hover:opacity-100 transition-all" />
+                              <span className="text-[10px] text-slate-600 truncate font-black uppercase tracking-tight group-hover/teacher:text-slate-900 transition-colors flex-1">{teacher.name}</span>
+                              <Share2 className="w-3 h-3 text-slate-300 group-hover/teacher:text-amber-500 opacity-0 group-hover/teacher:opacity-100 transition-all" />
                             </button>
                           )}
                         </div>
@@ -339,7 +350,7 @@ export function PublicScheduleViewer({ schedule, courses, teachers, holidays, on
                     );
                   })}
                 </div>
-              </>
+              </div>
             )}
           </div>
         </div>

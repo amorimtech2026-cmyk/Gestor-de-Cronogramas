@@ -24,8 +24,12 @@ export function SortableItem({ id, children }: SortableItemProps) {
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="relative">
-      <div className="absolute left-2 top-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing p-1 hover:bg-gray-100 rounded">
+    <div ref={setNodeRef} style={style} className="relative">
+      <div 
+        {...attributes} 
+        {...listeners} 
+        className="absolute left-2 top-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing p-1 hover:bg-gray-100 rounded z-10"
+      >
         <div className="grid grid-cols-2 gap-0.5 opacity-30">
           <div className="w-1 h-1 bg-gray-600 rounded-full" />
           <div className="w-1 h-1 bg-gray-600 rounded-full" />

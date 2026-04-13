@@ -4,7 +4,10 @@ import React, { useState } from 'react';
 import { 
   Calendar, 
   Edit2, 
-  Trash2 
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+  Download
 } from 'lucide-react';
 import { 
   collection, 
@@ -15,7 +18,7 @@ import {
 } from 'firebase/firestore';
 import { format, parseISO } from 'date-fns';
 import { db, handleFirestoreError, OperationType } from '@/lib/firebase';
-import { HOLIDAYS_2026 } from '@/lib/calendar';
+import { getHolidaysForYear } from '@/lib/calendar';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -31,6 +34,74 @@ export function HolidaysManager({ holidays, isAdmin }: HolidaysManagerProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [loadingYear, setLoadingYear] = useState(false);
+
+  const [showDuplicateConfirm, setShowDuplicateConfirm] = useState(false);
+  const [duplicateIds, setDuplicateIds] = useState<string[]>([]);
+
+  const handleLoadYearHolidays = async () => {
+    setLoadingYear(true);
+    try {
+      const yearHolidays = getHolidaysForYear(selectedYear);
+      const existingDates = new Set(holidays.map((h: any) => h.date));
+      let added = 0;
+      
+      for (const h of yearHolidays) {
+        if (!existingDates.has(h.date)) {
+          await addDoc(collection(db, 'holidays'), h);
+          added++;
+        }
+      }
+      
+      if (added > 0) {
+        alert(`${added} novos feriados de ${selectedYear} foram adicionados!`);
+      } else {
+        alert(`Todos os feriados de ${selectedYear} já estão cadastrados.`);
+      }
+    } catch (e) {
+      handleFirestoreError(e, OperationType.WRITE, 'holidays');
+    } finally {
+      setLoadingYear(false);
+    }
+  };
+
+  const handleRemoveDuplicates = async () => {
+    const seen = new Set<string>();
+    const duplicates: string[] = [];
+    
+    holidays.forEach((h: any) => {
+      const key = `${h.date}_${h.description.trim().toLowerCase()}`;
+      if (seen.has(key)) {
+        duplicates.push(h.id);
+      } else {
+        seen.add(key);
+      }
+    });
+
+    if (duplicates.length === 0) {
+      alert("Nenhum feriado duplicado encontrado.");
+      return;
+    }
+
+    setDuplicateIds(duplicates);
+    setShowDuplicateConfirm(true);
+  };
+
+  const confirmRemoveDuplicates = async () => {
+    setIsDeleting(true);
+    try {
+      for (const id of duplicateIds) {
+        await deleteDoc(doc(db, 'holidays', id));
+      }
+      setShowDuplicateConfirm(false);
+      setDuplicateIds([]);
+    } catch (e) {
+      handleFirestoreError(e, OperationType.DELETE, 'holidays');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!form.date || !form.description) return;
@@ -74,37 +145,53 @@ export function HolidaysManager({ holidays, isAdmin }: HolidaysManagerProps) {
   return (
     <div className="space-y-6">
       {isAdmin && (
-        <Card className="p-4 sm:p-6 border-indigo-100 bg-indigo-50/30 flex flex-col items-center text-center space-y-4">
+        <Card className="p-4 sm:p-6 border-indigo-100 bg-indigo-50/30 flex flex-col items-center text-center space-y-6">
           <div className="w-10 h-10 sm:w-12 sm:h-12 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center">
             <Calendar className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div>
             <h3 className="text-base sm:text-lg font-bold text-indigo-900">
-              {holidays.length === 0 ? 'Nenhum feriado cadastrado' : `${holidays.length} feriados cadastrados`}
+              Gerenciador de Feriados
             </h3>
             <p className="text-xs sm:text-sm text-indigo-600/70">
-              {holidays.length === 0 
-                ? 'Deseja carregar os feriados padrão de 2026 para Recife?' 
-                : 'Deseja recarregar/atualizar os feriados padrão de 2026?'}
+              Selecione o ano para carregar automaticamente os feriados nacionais e regionais.
             </p>
           </div>
-          <Button onClick={async () => {
-            const existingDates = new Set(holidays.map((h: any) => h.date));
-            let added = 0;
-            for (const h of HOLIDAYS_2026) {
-              if (!existingDates.has(h.date)) {
-                await addDoc(collection(db, 'holidays'), h);
-                added++;
-              }
-            }
-            if (added > 0) {
-              alert(`${added} novos feriados adicionados!`);
-            } else {
-              alert("Todos os feriados de 2026 já estão cadastrados.");
-            }
-          }}>
-            {holidays.length === 0 ? 'Carregar Feriados 2026' : 'Verificar Feriados 2026'}
-          </Button>
+
+          <div className="flex flex-col sm:flex-row items-center gap-4">
+            <div className="flex items-center bg-white border border-indigo-200 rounded-xl p-1 shadow-sm">
+              <button 
+                onClick={() => setSelectedYear(selectedYear - 1)}
+                className="p-2 hover:bg-indigo-50 text-indigo-600 rounded-lg transition-colors"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <div className="px-6 font-black text-xl text-indigo-900 min-w-[100px]">
+                {selectedYear}
+              </div>
+              <button 
+                onClick={() => setSelectedYear(selectedYear + 1)}
+                className="p-2 hover:bg-indigo-50 text-indigo-600 rounded-lg transition-colors"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+
+            <Button 
+              onClick={handleLoadYearHolidays} 
+              disabled={loadingYear}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white border-none shadow-lg"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              {loadingYear ? 'Carregando...' : `Carregar Feriados ${selectedYear}`}
+            </Button>
+          </div>
+
+          <div className="pt-2">
+            <Button variant="ghost" onClick={handleRemoveDuplicates} className="text-red-600 hover:bg-red-50 border-red-100">
+              <Trash2 className="w-4 h-4 mr-2" /> Limpar Duplicados
+            </Button>
+          </div>
         </Card>
       )}
       {isAdmin && (
@@ -156,6 +243,15 @@ export function HolidaysManager({ holidays, isAdmin }: HolidaysManagerProps) {
           </Card>
         ))}
       </div>
+
+      <ConfirmationModal 
+        isOpen={showDuplicateConfirm}
+        title="Excluir Duplicados"
+        message={`Deseja excluir os ${duplicateIds.length} feriados duplicados encontrados? Esta ação manterá apenas um registro para cada data/nome.`}
+        onConfirm={confirmRemoveDuplicates}
+        onCancel={() => setShowDuplicateConfirm(false)}
+        loading={isDeleting}
+      />
 
       <ConfirmationModal 
         isOpen={!!deletingId}

@@ -9,7 +9,8 @@ import {
   BookOpen, 
   ChevronRight, 
   Calendar, 
-  ArrowRight 
+  ArrowRight,
+  Download
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -17,8 +18,6 @@ import Image from 'next/image';
 import { Card } from './ui/Card';
 import { PublicScheduleViewer } from './PublicScheduleViewer';
 import { CourseDetailsDrawer } from './CourseDetailsDrawer';
-import { CourseLandingPage } from './CourseLandingPage';
-import { MarketingCatalog } from './MarketingCatalog';
 
 interface PublicPortalProps {
   teachers: any[];
@@ -35,8 +34,6 @@ interface PublicPortalProps {
 export function PublicPortal({ teachers, courses, holidays, schedules, onLogin, isLoggingIn, user, logout, initialScheduleId }: PublicPortalProps) {
   const [selectedScheduleId, setSelectedScheduleId] = useState<string | null>(null);
   const [viewingCourseId, setViewingCourseId] = useState<string | null>(null);
-  const [landingCourseId, setLandingCourseId] = useState<string | null>(null);
-  const [showCatalog, setShowCatalog] = useState(false);
 
   // Auto-open schedule if ID is in URL
   React.useEffect(() => {
@@ -51,7 +48,18 @@ export function PublicPortal({ teachers, courses, holidays, schedules, onLogin, 
   const activeSchedules = schedules.filter((s: any) => s.status === 'active');
   const selectedSchedule = schedules.find(s => s.id === selectedScheduleId);
   const viewingCourse = courses.find(c => c.id === viewingCourseId);
-  const landingCourse = courses.find(c => c.id === landingCourseId);
+
+  const ID_NAME_MAPPING: Record<string, string> = {
+    'KuQdvQvzYMo9EAofehxQ': 'Engenharia Legal e Perícias: Avaliações e Desempenho',
+    '8ehU2wioAdBWxFOn0Fo8': 'Engenharia e Gestão da Manutenção Predial na Construção 4.0'
+  };
+
+  const getCourseName = (cid: string, idx: number, scheduleNames?: string[]) => {
+    const course = courses.find((x: any) => x.id === cid);
+    if (course) return course.name;
+    if (ID_NAME_MAPPING[cid]) return ID_NAME_MAPPING[cid];
+    return scheduleNames?.[idx] || 'Curso';
+  };
 
   // If the selected schedule becomes inactive, close it
   React.useEffect(() => {
@@ -64,47 +72,50 @@ export function PublicPortal({ teachers, courses, holidays, schedules, onLogin, 
   }, [selectedScheduleId, schedules]);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
       {/* Header */}
-      <header className="bg-indigo-700 text-white py-8 px-4 sm:px-6 shadow-lg">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="text-center md:text-left space-y-2">
-            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">Calendário Acadêmico ESUDA</h1>
-            <p className="text-indigo-100 text-lg">Pós-Graduações em Engenharia e Arquitetura</p>
-            <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 pt-2">
-              <span className="bg-indigo-600/50 px-3 py-1 rounded-full text-sm font-medium border border-indigo-400/30">
-                Coordenador: Prof. Emanoel Amorim
+      <header className="bg-[#0f172a] text-white py-10 px-4 sm:px-6 shadow-2xl border-b border-slate-800">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
+          <div className="text-center md:text-left space-y-3">
+            <h1 className="text-3xl sm:text-5xl font-black tracking-tighter uppercase leading-none">
+              Portal <span className="text-amber-500">Acadêmico</span> ESUDA
+            </h1>
+            <p className="text-slate-400 text-lg font-bold uppercase tracking-widest">Pós-Graduações em Engenharia e Arquitetura</p>
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 pt-4">
+              <span className="bg-slate-800 px-4 py-2 rounded-lg text-xs font-black border border-slate-700 uppercase tracking-tight">
+                Coordenação: Prof. Emanoel Amorim
               </span>
               <a 
                 href="https://emanoelamorim.base44.app/Home" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="flex items-center gap-1 text-sm font-bold hover:text-indigo-200 transition-colors underline underline-offset-4"
+                className="flex items-center gap-2 text-xs font-black text-amber-500 hover:text-amber-400 transition-colors uppercase tracking-tight border-b-2 border-amber-500/30 pb-1"
               >
                 Site do Coordenador <ExternalLink className="w-3 h-3" />
               </a>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <button 
-              onClick={() => setShowCatalog(true)}
-              className="hidden sm:flex items-center gap-2 px-5 py-2.5 bg-white text-indigo-700 hover:bg-indigo-50 rounded-xl text-sm font-black shadow-lg transition-all hover:scale-105"
+              onClick={() => window.open(window.location.href, '_blank')}
+              className="flex items-center gap-2 px-6 py-3 bg-slate-800 text-amber-500 hover:bg-slate-700 rounded-lg text-sm font-black shadow-xl transition-all border border-slate-700 uppercase tracking-widest"
+              title="Abrir em nova aba para melhor experiência de impressão"
             >
-              <BookOpen className="w-4 h-4" />
-              Conheça nossos Cursos
+              <ExternalLink className="w-4 h-4" />
+              Ver em Tela Cheia
             </button>
             {user ? (
-              <div className="flex items-center gap-3 bg-white/10 p-2 rounded-xl backdrop-blur-sm">
-                <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center font-bold">
+              <div className="flex items-center gap-4 bg-slate-800 p-2 pr-4 rounded-lg border border-slate-700">
+                <div className="w-10 h-10 rounded-lg bg-amber-500 text-slate-900 flex items-center justify-center font-black">
                   {user.email?.[0].toUpperCase()}
                 </div>
-                <button onClick={logout} className="text-xs font-bold hover:text-indigo-200 uppercase tracking-wider">Sair</button>
+                <button onClick={logout} className="text-xs font-black hover:text-amber-500 uppercase tracking-widest transition-colors">Sair</button>
               </div>
             ) : (
               <button 
                 onClick={onLogin}
                 disabled={isLoggingIn}
-                className="bg-white text-indigo-700 px-6 py-2.5 rounded-xl font-bold hover:bg-indigo-50 transition-all shadow-md flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-slate-800 text-white px-6 py-3 rounded-lg font-black hover:bg-slate-700 transition-all shadow-xl flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed border border-slate-700 uppercase tracking-widest text-xs"
               >
                 {isLoggingIn ? (
                   <RotateCcw className="w-4 h-4 animate-spin" />
@@ -118,62 +129,71 @@ export function PublicPortal({ teachers, courses, holidays, schedules, onLogin, 
         </div>
       </header>
 
-      <main className="flex-1 max-w-7xl mx-auto w-full p-4 sm:p-6 space-y-12">
+      <main className="flex-1 max-w-7xl mx-auto w-full p-4 sm:p-8 space-y-16">
         {/* Marketing Section */}
-        <section id="courses-section" className="space-y-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-l-4 border-indigo-600 pl-4">
+        <section id="courses-section" className="space-y-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-l-8 border-slate-900 pl-6">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Nossas Pós-Graduações</h2>
-              <p className="text-gray-500 text-sm">Conheça o Novo Modelo Educacional Esuda</p>
+              <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter leading-none">Nossas Especializações</h2>
+              <p className="text-slate-500 text-sm font-bold uppercase tracking-widest mt-2">O Novo Modelo Educacional Esuda</p>
             </div>
-            <button 
-              onClick={() => setShowCatalog(true)}
-              className="bg-indigo-50 text-indigo-700 px-6 py-2.5 rounded-xl font-bold hover:bg-indigo-100 transition-all flex items-center gap-2 border border-indigo-100"
-            >
-              <RotateCcw className="w-4 h-4" />
-              Ver Catálogo de Propaganda (PDF)
-            </button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {courses.map((course: any) => (
               <motion.div 
                 key={course.id}
-                whileHover={{ y: -5 }}
-                className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col cursor-pointer group"
+                whileHover={{ y: -8 }}
+                className="bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden flex flex-col cursor-pointer group hover:border-amber-500/50 transition-all"
                 onClick={() => setViewingCourseId(course.id)}
               >
-                <div className="h-40 bg-indigo-100 relative overflow-hidden">
-                  {course.imageUrl ? (
+                <div className="h-48 bg-slate-100 relative overflow-hidden">
+                  {course.imageUrl && !course.imageUrl.includes('esuda.edu.br') ? (
                     <Image 
                       src={course.imageUrl} 
                       alt={course.name} 
                       fill 
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      className="object-cover grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-700 opacity-80 group-hover:opacity-100"
                       referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = `https://picsum.photos/seed/${course.id}/800/600`;
+                      }}
                     />
                   ) : (
-                    <div className="absolute inset-0 flex items-center justify-center text-indigo-300">
-                      <BookOpen className="w-16 h-16 opacity-20" />
+                    <div className="absolute inset-0 flex items-center justify-center text-slate-300">
+                      {course.imageUrl?.includes('esuda.edu.br') ? (
+                        <Image 
+                          src={`https://picsum.photos/seed/${course.id}/800/600`}
+                          alt={course.name}
+                          fill
+                          className="object-cover grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-700 opacity-80 group-hover:opacity-100"
+                        />
+                      ) : (
+                        <BookOpen className="w-16 h-16 opacity-20" />
+                      )}
                     </div>
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-end p-4">
-                    <h3 className="text-white font-bold leading-tight drop-shadow-md">{course.name}</h3>
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent flex items-end p-6">
+                    <h3 className="text-white text-xl font-black leading-tight uppercase tracking-tighter group-hover:text-amber-500 transition-colors">{course.name}</h3>
                   </div>
                 </div>
-                <div className="p-5 flex-1 flex flex-col">
-                  <p className="text-gray-600 text-sm line-clamp-3 mb-4 italic">
+                <div className="p-6 flex-1 flex flex-col">
+                  <p className="text-slate-600 text-sm line-clamp-3 mb-6 font-medium italic border-l-4 border-slate-100 pl-4 group-hover:border-amber-500 transition-colors">
                     &quot;{course.marketingSummary || 'Conheça mais sobre este curso de excelência da ESUDA.'}&quot;
                   </p>
-                  <div className="mt-auto pt-4 border-t border-gray-50 flex justify-between items-center">
-                    <div className="flex flex-wrap gap-1">
-                      {course.specificDisciplines?.slice(0, 2).map((d: string) => (
-                        <span key={d} className="text-[9px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full truncate max-w-[120px]">
-                          {d}
-                        </span>
-                      ))}
+                  <div className="mt-auto pt-6 border-t border-slate-50 flex justify-between items-center">
+                    <div className="flex flex-wrap gap-2">
+                      {(course.specificDisciplines || []).slice(0, 2).map((d: any) => {
+                        const discName = typeof d === 'string' ? d : d.name;
+                        return (
+                          <span key={discName} className="text-[10px] bg-slate-100 text-slate-600 px-3 py-1 rounded font-black uppercase tracking-tight">
+                            {discName}
+                          </span>
+                        );
+                      })}
                     </div>
-                    <span className="text-indigo-600 font-bold text-[10px] uppercase tracking-wider flex items-center gap-1">
-                      Ver mais <ChevronRight className="w-3 h-3" />
+                    <span className="text-slate-900 font-black text-[10px] uppercase tracking-widest flex items-center gap-2 group-hover:text-amber-600 transition-colors">
+                      Detalhes <ArrowRight className="w-3 h-3" />
                     </span>
                   </div>
                 </div>
@@ -183,54 +203,54 @@ export function PublicPortal({ teachers, courses, holidays, schedules, onLogin, 
         </section>
 
         {/* Active Schedules Section */}
-        <section className="space-y-6">
-          <div className="flex items-center gap-3 border-l-4 border-indigo-600 pl-4">
-            <h2 className="text-2xl font-bold text-gray-900">Cronogramas Ativos</h2>
+        <section className="space-y-8">
+          <div className="flex items-center gap-4 border-l-8 border-amber-500 pl-6">
+            <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter leading-none">Cronogramas Ativos</h2>
           </div>
           {activeSchedules.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {activeSchedules.map((schedule: any) => (
                 <Card 
                   key={schedule.id}
-                  className="p-6 cursor-pointer hover:border-indigo-400 transition-all group"
+                  className="p-8 cursor-pointer hover:border-amber-500 transition-all group bg-white shadow-xl border-slate-200 rounded-xl"
                   onClick={() => setSelectedScheduleId(schedule.id)}
                 >
-                  <div className="space-y-4">
+                  <div className="space-y-6">
                     <div className="flex justify-between items-start">
-                      <div className="bg-indigo-100 text-indigo-700 p-3 rounded-xl group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                      <div className="bg-slate-900 text-amber-500 p-4 rounded-lg group-hover:bg-amber-500 group-hover:text-slate-900 transition-all shadow-lg">
                         <Calendar className="w-6 h-6" />
                       </div>
-                      <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">ATIVO</span>
+                      <span className="text-[10px] font-black text-amber-600 bg-amber-50 px-3 py-1.5 rounded uppercase tracking-widest border border-amber-100">Status: Ativo</span>
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">{schedule.className}</h3>
-                      <p className="text-sm text-gray-500 mt-1">Início: {format(new Date(schedule.startDate), 'dd/MM/yyyy', { locale: ptBR })}</p>
+                      <h3 className="text-2xl font-black text-slate-900 group-hover:text-amber-600 transition-colors uppercase tracking-tighter leading-tight">{schedule.className}</h3>
+                      <p className="text-sm text-slate-500 mt-2 font-bold uppercase tracking-widest">Início: {format(new Date(schedule.startDate), 'dd/MM/yyyy', { locale: ptBR })}</p>
                     </div>
-                    <div className="space-y-2">
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Cursos Integrados</p>
+                    <div className="space-y-3">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Cursos Integrados</p>
                       <div className="flex flex-wrap gap-2">
-                        {schedule.courseIds.map((cid: string) => {
-                          const c = courses.find((x: any) => x.id === cid);
+                        {schedule.courseIds.map((cid: string, idx: number) => {
+                          const courseName = getCourseName(cid, idx, schedule.courseNames);
                           return (
-                            <span key={cid} className="text-xs bg-gray-50 text-gray-600 px-2 py-1 rounded-lg border border-gray-100">
-                              {c?.name || 'Curso'}
+                            <span key={cid} className="text-[10px] bg-slate-50 text-slate-700 px-3 py-1.5 rounded font-black border border-slate-100 uppercase tracking-tight">
+                              {courseName}
                             </span>
                           );
                         })}
                       </div>
                     </div>
-                    <div className="pt-4 flex items-center justify-between text-indigo-600 font-bold text-sm">
-                      <span>Ver Calendário Completo</span>
-                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    <div className="pt-6 border-t border-slate-50 flex items-center justify-between text-slate-900 font-black text-xs uppercase tracking-widest group-hover:text-amber-600 transition-colors">
+                      <span>Acessar Calendário</span>
+                      <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
                     </div>
                   </div>
                 </Card>
               ))}
             </div>
           ) : (
-            <div className="bg-white rounded-2xl p-12 text-center border-2 border-dashed border-gray-200">
-              <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500">Nenhum cronograma ativo no momento.</p>
+            <div className="bg-white rounded-xl p-20 text-center border-4 border-dashed border-slate-200">
+              <Calendar className="w-16 h-16 text-slate-200 mx-auto mb-6" />
+              <p className="text-slate-400 font-black uppercase tracking-widest">Nenhum cronograma ativo no momento.</p>
             </div>
           )}
         </section>
@@ -256,45 +276,7 @@ export function PublicPortal({ teachers, courses, holidays, schedules, onLogin, 
             teachers={teachers}
             schedules={schedules}
             onClose={() => setViewingCourseId(null)} 
-            onOpenLanding={() => {
-              setViewingCourseId(null);
-              setLandingCourseId(viewingCourse.id);
-            }}
           />
-        )}
-      </AnimatePresence>
-
-      {/* Course Landing Page (Marketing View) */}
-      <AnimatePresence>
-        {landingCourse && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="fixed inset-0 z-[200]"
-          >
-            <CourseLandingPage 
-              course={landingCourse} 
-              onClose={() => setLandingCourseId(null)} 
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Marketing Catalog (Full Portfolio) */}
-      <AnimatePresence>
-        {showCatalog && (
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
-            className="fixed inset-0 z-[200]"
-          >
-            <MarketingCatalog 
-              courses={courses} 
-              onClose={() => setShowCatalog(false)} 
-            />
-          </motion.div>
         )}
       </AnimatePresence>
     </div>

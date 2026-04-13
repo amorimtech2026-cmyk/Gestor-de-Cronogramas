@@ -22,10 +22,9 @@ interface CourseDetailsDrawerProps {
   teachers: any[];
   schedules: any[];
   onClose: () => void;
-  onOpenLanding: () => void;
 }
 
-export function CourseDetailsDrawer({ course, teachers, schedules, onClose, onOpenLanding }: CourseDetailsDrawerProps) {
+export function CourseDetailsDrawer({ course, teachers, schedules, onClose }: CourseDetailsDrawerProps) {
   const activeSchedules = schedules.filter((s: any) => s.courseIds.includes(course.id) && s.status === 'active');
   
   return (
@@ -46,11 +45,30 @@ export function CourseDetailsDrawer({ course, teachers, schedules, onClose, onOp
       >
         {/* Header Image */}
         <div className="h-64 bg-indigo-900 relative shrink-0">
-          {course.imageUrl ? (
-            <Image src={course.imageUrl} alt={course.name} fill className="object-cover opacity-60" referrerPolicy="no-referrer" />
+          {course.imageUrl && !course.imageUrl.includes('esuda.edu.br') ? (
+            <Image 
+              src={course.imageUrl} 
+              alt={course.name} 
+              fill 
+              className="object-cover opacity-60" 
+              referrerPolicy="no-referrer"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = `https://picsum.photos/seed/${course.id}/800/600`;
+              }}
+            />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center text-white/20">
-              <BookOpen className="w-24 h-24" />
+              {course.imageUrl?.includes('esuda.edu.br') ? (
+                <Image 
+                  src={`https://picsum.photos/seed/${course.id}/800/600`}
+                  alt={course.name}
+                  fill
+                  className="object-cover opacity-60"
+                />
+              ) : (
+                <BookOpen className="w-24 h-24" />
+              )}
             </div>
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />
@@ -156,14 +174,17 @@ export function CourseDetailsDrawer({ course, teachers, schedules, onClose, onOp
                   <div className="w-2 h-2 rounded-full bg-indigo-600" /> Específicas do Curso ({course.specificDisciplines?.length || 0} Disciplinas)
                 </div>
                 <div className="grid grid-cols-1 gap-2">
-                  {(course.specificDisciplines || []).map((d: string, i: number) => (
-                    <div key={i} className="flex items-center gap-3 bg-white p-3 rounded-xl border border-gray-100 shadow-sm transition-all hover:border-indigo-200">
-                      <div className="w-6 h-6 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-[10px] font-bold shrink-0">
-                        {i + COMMON_DISCIPLINES.length + 1}
+                  {(course.specificDisciplines || []).map((d: any, i: number) => {
+                    const discName = typeof d === 'string' ? d : d.name;
+                    return (
+                      <div key={i} className="flex items-center gap-3 bg-white p-3 rounded-xl border border-gray-100 shadow-sm transition-all hover:border-indigo-200">
+                        <div className="w-6 h-6 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-[10px] font-bold shrink-0">
+                          {i + COMMON_DISCIPLINES.length + 1}
+                        </div>
+                        <span className="text-sm text-gray-700 font-medium">{discName}</span>
                       </div>
-                      <span className="text-sm text-gray-700 font-medium">{d}</span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -199,12 +220,6 @@ export function CourseDetailsDrawer({ course, teachers, schedules, onClose, onOp
             >
               Quero me inscrever agora
             </a>
-            <button 
-              onClick={onOpenLanding}
-              className="w-full bg-white text-indigo-600 py-4 rounded-2xl font-bold text-center border-2 border-indigo-100 hover:bg-indigo-50 transition-all"
-            >
-              Ver Folder de Propaganda (PDF)
-            </button>
           </div>
         </div>
       </motion.div>

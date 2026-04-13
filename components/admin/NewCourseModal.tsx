@@ -5,7 +5,9 @@ import { motion } from 'motion/react';
 import { 
   Plus, 
   Trash2, 
-  Menu 
+  Menu,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { 
   collection, 
@@ -51,7 +53,7 @@ export function NewCourseModal({ isAdmin, onClose }: NewCourseModalProps) {
   const [startDateInfo, setStartDateInfo] = useState('');
   const [enrollmentStatus, setEnrollmentStatus] = useState('Abertas');
   const [websiteUrl, setWebsiteUrl] = useState('');
-  const [disciplines, setDisciplines] = useState<string[]>([]);
+  const [disciplines, setDisciplines] = useState<{id: string, name: string, syllabus: string, isExpanded: boolean}[]>([]);
   const [newDisc, setNewDisc] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -65,9 +67,9 @@ export function NewCourseModal({ isAdmin, onClose }: NewCourseModalProps) {
   const handleDragEnd = (event: any) => {
     const { active, over } = event;
     if (active.id !== over.id) {
-      setDisciplines((items) => {
-        const oldIndex = items.indexOf(active.id);
-        const newIndex = items.indexOf(over.id);
+      setDisciplines((items: any[]) => {
+        const oldIndex = items.findIndex(item => item.id === active.id);
+        const newIndex = items.findIndex(item => item.id === over.id);
         return arrayMove(items, oldIndex, newIndex);
       });
     }
@@ -91,7 +93,7 @@ export function NewCourseModal({ isAdmin, onClose }: NewCourseModalProps) {
         startDateInfo,
         enrollmentStatus,
         websiteUrl,
-        specificDisciplines: disciplines,
+        specificDisciplines: disciplines.map((d: any) => ({ name: d.name, syllabus: d.syllabus || '' })),
         createdAt: serverTimestamp()
       });
       onClose();
@@ -175,7 +177,7 @@ export function NewCourseModal({ isAdmin, onClose }: NewCourseModalProps) {
               <div className="flex items-end">
                 <Button onClick={() => {
                   if (newDisc) {
-                    setDisciplines([...disciplines, newDisc]);
+                    setDisciplines([...disciplines, { id: `new-${Date.now()}`, name: newDisc, syllabus: '', isExpanded: true }]);
                     setNewDisc('');
                   }
                 }} variant="secondary" className="shrink-0">Add</Button>
@@ -188,17 +190,54 @@ export function NewCourseModal({ isAdmin, onClose }: NewCourseModalProps) {
                 onDragEnd={handleDragEnd}
               >
                 <SortableContext 
-                  items={disciplines}
+                  items={disciplines.map((d: any) => d.id)}
                   strategy={verticalListSortingStrategy}
                 >
-                  {disciplines.map((disc, i) => (
-                    <SortableItem key={disc} id={disc}>
-                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 pl-8 sm:pl-10 relative">
+                  {disciplines.map((disc: any, i: number) => (
+                    <SortableItem key={disc.id} id={disc.id}>
+                      <div className="flex flex-col gap-2 p-1.5 bg-gray-50 rounded-lg border border-gray-200 pl-8 sm:pl-10 relative group hover:border-indigo-200 transition-all">
                         <Menu className="w-4 h-4 text-gray-300 absolute left-3 top-1/2 -translate-y-1/2" />
-                        <span className="text-sm font-medium text-gray-700 truncate">{disc}</span>
-                        <button onClick={() => setDisciplines(disciplines.filter((_, idx) => idx !== i))} className="text-red-500 hover:bg-red-50 p-1.5 rounded shrink-0">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <input 
+                            className="flex-1 border-none bg-transparent focus:ring-2 focus:ring-indigo-500/20 focus:bg-white rounded px-2 h-8 text-sm outline-none font-medium text-gray-700 transition-all" 
+                            value={disc.name} 
+                            onChange={(e: any) => {
+                              const next = [...disciplines];
+                              next[i] = { ...next[i], name: e.target.value };
+                              setDisciplines(next);
+                            }}
+                            placeholder="Nome da disciplina"
+                          />
+                          <button 
+                            onClick={() => {
+                              const next = [...disciplines];
+                              next[i] = { ...next[i], isExpanded: !next[i].isExpanded };
+                              setDisciplines(next);
+                            }}
+                            className={`p-1 rounded hover:bg-gray-200 transition-colors ${disc.syllabus ? 'text-indigo-600' : 'text-gray-400'}`}
+                          >
+                            {disc.isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                          </button>
+                          <button onClick={() => setDisciplines(disciplines.filter((_: any, idx: number) => idx !== i))} className="text-red-500 hover:bg-red-50 p-1.5 rounded shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        {disc.isExpanded && (
+                          <div className="px-2 pb-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                            <TextArea 
+                              placeholder="Digite a ementa da disciplina..."
+                              value={disc.syllabus}
+                              onChange={(e: any) => {
+                                const next = [...disciplines];
+                                next[i] = { ...next[i], syllabus: e.target.value };
+                                setDisciplines(next);
+                              }}
+                              rows={3}
+                              className="text-xs"
+                            />
+                          </div>
+                        )}
                       </div>
                     </SortableItem>
                   ))}

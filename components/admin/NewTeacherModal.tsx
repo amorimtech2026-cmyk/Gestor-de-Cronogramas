@@ -111,24 +111,25 @@ export function NewTeacherModal({ courses, isAdmin, onClose }: NewTeacherModalPr
                 <div key={course.id} className="space-y-2">
                   <p className="text-[10px] sm:text-xs font-bold text-indigo-600 uppercase">{course.name}</p>
                   <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                    {(course.specificDisciplines || []).map((disc: string) => {
-                      const isSelected = form.specialties?.some((s: any) => s.courseId === course.id && s.disciplineName === disc);
+                    {(course.specificDisciplines || []).map((d: any) => {
+                      const discName = typeof d === 'string' ? d : d.name;
+                      const isSelected = form.specialties?.some((s: any) => s.courseId === course.id && s.disciplineName === discName);
                       return (
-                        <button
-                          key={disc}
-                          onClick={() => {
-                            const current = form.specialties || [];
-                            if (isSelected) {
-                              setForm({ ...form, specialties: current.filter((s: any) => !(s.courseId === course.id && s.disciplineName === disc)) });
-                            } else {
-                              setForm({ ...form, specialties: [...current, { courseId: course.id, disciplineName: disc }] });
-                            }
-                          }}
-                          className={`px-2 py-1 rounded text-[9px] sm:text-[10px] border transition-all ${isSelected ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-500 border-gray-200 hover:border-indigo-300'}`}
-                        >
-                          {disc}
-                        </button>
-                      );
+                         <button
+                           key={discName}
+                           onClick={() => {
+                             const current = form.specialties || [];
+                             if (isSelected) {
+                               setForm({ ...form, specialties: current.filter((s: any) => !(s.courseId === course.id && s.disciplineName === discName)) });
+                             } else {
+                               setForm({ ...form, specialties: [...current, { courseId: course.id, disciplineName: discName }] });
+                             }
+                           }}
+                           className={`px-2 py-1 rounded text-[9px] sm:text-[10px] border transition-all ${isSelected ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-500 border-gray-200 hover:border-indigo-300'}`}
+                         >
+                           {discName}
+                         </button>
+                       );
                     })}
                   </div>
                 </div>

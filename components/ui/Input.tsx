@@ -2,8 +2,8 @@
 
 import React from 'react';
 
-export const Input = ({ label, ...props }: any) => (
-  <div className="space-y-1.5">
+export const Input = ({ label, className, ...props }: any) => (
+  <div className={`space-y-1.5 ${className || ''}`}>
     {label && <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">{label}</label>}
     <input 
       {...props}

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   LayoutDashboard, 
@@ -8,6 +8,7 @@ import {
   BookOpen, 
   Users, 
   AlertCircle, 
+  FileText,
   Save, 
   LogOut, 
   Menu, 
@@ -15,6 +16,8 @@ import {
   Plus 
 } from 'lucide-react';
 import Image from 'next/image';
+import { collection, getDocs, updateDoc, doc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { Button } from '../ui/Button';
 import { SidebarItem } from './SidebarItem';
 import { DashboardOverview } from './DashboardOverview';
@@ -22,6 +25,7 @@ import { SchedulesList } from './SchedulesList';
 import { CoursesManager } from './CoursesManager';
 import { TeachersManager } from './TeachersManager';
 import { HolidaysManager } from './HolidaysManager';
+import { TeacherListGenerator } from './TeacherListGenerator';
 import { NewScheduleModal } from './NewScheduleModal';
 import { NewCourseModal } from './NewCourseModal';
 import { NewTeacherModal } from './NewTeacherModal';
@@ -54,6 +58,107 @@ export function AdminPortal({
   const [isNewCourseModalOpen, setIsNewCourseModalOpen] = useState(false);
   const [isNewTeacherModalOpen, setIsNewTeacherModalOpen] = useState(false);
   const [viewingScheduleId, setViewingScheduleId] = useState<string | null>(null);
+
+  // Auto-fix broken images on mount if admin
+  useEffect(() => {
+    if (isAdmin) {
+      const fixImages = async () => {
+        try {
+          const snap = await getDocs(collection(db, 'courses'));
+          const imageMapping: Record<string, string> = {
+            'Design de Interiores Contemporâneo': 'https://i.postimg.cc/1z7b2pRB/DESIGN-DE-INTER-CApa.png',
+            'Neuroarquitetura': 'https://i.postimg.cc/tJ8qjKX7/NEUROARQUITETURA-CAPA.png',
+            'Acústica Arquitetônica e Iluminação': 'https://i.postimg.cc/tJ8qjKXs/ACUSTIC-ARQUITETO-CAPA.png',
+            'Engenharia Legal': 'https://i.postimg.cc/fy1zNGwJ/engenharia-legal-capa.png',
+            'Manutenção Predial': 'https://i.postimg.cc/Kv4fpdkq/engen-construc-4-0.png',
+            'Gestão de Projetos e Obras': 'https://i.postimg.cc/Gh9KgZ8M/GEST-DE-PROJ-E-OBRAS-CAPA.png',
+            'Tecnologia BIM': 'https://i.postimg.cc/8Ps4XqJ0/TECNOLOGIA-BIM-CAPA-1.png'
+          };
+
+          for (const courseDoc of snap.docs) {
+            const data = courseDoc.data();
+            const courseName = data.name;
+            
+            // Check if we have a specific new image for this course
+            const matchKey = Object.keys(imageMapping).find(key => courseName.includes(key));
+            
+            if (matchKey) {
+              const newUrl = imageMapping[matchKey];
+              if (data.imageUrl !== newUrl) {
+                await updateDoc(doc(db, 'courses', courseDoc.id), { imageUrl: newUrl });
+                console.log(`Updated image for course: ${courseName}`);
+              }
+            } else if (data.imageUrl && data.imageUrl.includes('esuda.edu.br')) {
+              // Fallback for other esuda images that might still be broken
+              const fallbackUrl = `https://picsum.photos/seed/${courseDoc.id}/800/600`;
+              await updateDoc(doc(db, 'courses', courseDoc.id), { imageUrl: fallbackUrl });
+              console.log(`Auto-fixed esuda image for course: ${courseName}`);
+            }
+          }
+
+          // Also auto-fix schedule course names and IDs
+          const schedulesSnap = await getDocs(collection(db, 'schedules'));
+          const classesSnap = await getDocs(collection(db, 'classes'));
+          const globalCourseNameMap = new Map();
+          classesSnap.docs.forEach(d => {
+            const data = d.data();
+            if (data.courseId && data.courseName) {
+              globalCourseNameMap.set(data.courseId, data.courseName);
+            }
+          });
+
+          // Fix Classes first so they match the new IDs we might set in schedules
+          for (const cDoc of classesSnap.docs) {
+            const cData = cDoc.data();
+            if (!cData.isCommon && cData.courseId) {
+              const course = courses.find(c => c.id === cData.courseId);
+              if (!course && cData.courseName) {
+                const matchingCourse = courses.find(c => c.name === cData.courseName);
+                if (matchingCourse) {
+                  await updateDoc(cDoc.ref, { courseId: matchingCourse.id });
+                  console.log(`Auto-fixed courseId for class: ${cData.disciplineName}`);
+                }
+              }
+            }
+          }
+
+          for (const sDoc of schedulesSnap.docs) {
+            const sData = sDoc.data();
+            let changed = false;
+            
+            const newIds = [...(sData.courseIds || [])];
+            const newNames = sData.courseIds.map((cid: string, idx: number) => {
+              const course = courses.find(c => c.id === cid);
+              if (course) return course.name;
+              
+              // If course not found by ID, try to find by name from courseNames array
+              const oldName = sData.courseNames?.[idx] || globalCourseNameMap.get(cid);
+              if (oldName) {
+                const matchingCourse = courses.find(c => c.name === oldName);
+                if (matchingCourse) {
+                  newIds[idx] = matchingCourse.id;
+                  changed = true;
+                  return matchingCourse.name;
+                }
+              }
+              return cid;
+            });
+
+            if (JSON.stringify(sData.courseNames) !== JSON.stringify(newNames) || changed) {
+              await updateDoc(sDoc.ref, { 
+                courseNames: newNames,
+                courseIds: newIds
+              });
+              console.log(`Auto-fixed names/IDs for schedule: ${sData.className}`);
+            }
+          }
+        } catch (e) {
+          console.error("Erro no auto-fix:", e);
+        }
+      };
+      fixImages();
+    }
+  }, [isAdmin, courses]);
 
   const viewingSchedule = schedules.find(s => s.id === viewingScheduleId);
 
@@ -123,7 +228,13 @@ export function AdminPortal({
             active={activeTab === 'holidays'} 
             onClick={() => { setActiveTab('holidays'); setIsSidebarOpen(false); }} 
           />
-          {isAdmin && (
+          <SidebarItem 
+            icon={<FileText />} 
+            label="Relação de Docentes" 
+            active={activeTab === 'teacher-list'} 
+            onClick={() => { setActiveTab('teacher-list'); setIsSidebarOpen(false); }} 
+          />
+          {isAdmin && courses.length === 0 && (
             <button 
               onClick={() => { seedData(); setIsSidebarOpen(false); }}
               className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-amber-600 hover:bg-amber-50 mt-4 border border-dashed border-amber-200"
@@ -162,9 +273,10 @@ export function AdminPortal({
             {activeTab === 'schedules' ? 'Cronogramas' : 
              activeTab === 'courses' ? 'Cursos' :
              activeTab === 'teachers' ? 'Docentes' :
-             activeTab === 'holidays' ? 'Feriados' : 'Dashboard'}
+             activeTab === 'holidays' ? 'Feriados' :
+             activeTab === 'teacher-list' ? 'Relação de Docentes' : 'Dashboard'}
           </h1>
-          {isAdmin && activeTab !== 'dashboard' && (
+          {isAdmin && activeTab !== 'dashboard' && activeTab !== 'teacher-list' && (
             <Button className="w-full sm:w-auto" onClick={() => {
               if (activeTab === 'schedules') setIsNewScheduleModalOpen(true);
               if (activeTab === 'courses') setIsNewCourseModalOpen(true);
@@ -196,6 +308,7 @@ export function AdminPortal({
             {activeTab === 'courses' && <CoursesManager courses={courses} isAdmin={isAdmin} />}
             {activeTab === 'teachers' && <TeachersManager teachers={teachers} courses={courses} isAdmin={isAdmin} />}
             {activeTab === 'holidays' && <HolidaysManager holidays={holidays} isAdmin={isAdmin} />}
+            {activeTab === 'teacher-list' && <TeacherListGenerator courses={courses} teachers={teachers} />}
           </motion.div>
         </AnimatePresence>
       </main>

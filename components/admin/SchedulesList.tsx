@@ -18,6 +18,18 @@ interface SchedulesListProps {
 }
 
 export function SchedulesList({ schedules, courses, onSelect, isAdmin }: SchedulesListProps) {
+  const ID_NAME_MAPPING: Record<string, string> = {
+    'KuQdvQvzYMo9EAofehxQ': 'Engenharia Legal e Perícias: Avaliações e Desempenho',
+    '8ehU2wioAdBWxFOn0Fo8': 'Engenharia e Gestão da Manutenção Predial na Construção 4.0'
+  };
+
+  const getCourseName = (cid: string, idx: number, scheduleNames?: string[]) => {
+    const course = courses.find((x: any) => x.id === cid);
+    if (course) return course.name;
+    if (ID_NAME_MAPPING[cid]) return ID_NAME_MAPPING[cid];
+    return scheduleNames?.[idx] || 'Curso';
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {schedules.map((schedule: any) => (
@@ -42,11 +54,11 @@ export function SchedulesList({ schedules, courses, onSelect, isAdmin }: Schedul
             <div className="space-y-2">
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Cursos Integrados</p>
               <div className="flex flex-wrap gap-2">
-                {schedule.courseIds.map((cid: string) => {
-                  const c = courses.find((x: any) => x.id === cid);
+                {schedule.courseIds.map((cid: string, idx: number) => {
+                  const courseName = getCourseName(cid, idx, schedule.courseNames);
                   return (
                     <span key={cid} className="text-xs bg-gray-50 text-gray-600 px-2 py-1 rounded-lg border border-gray-100">
-                      {c?.name || 'Curso'}
+                      {courseName}
                     </span>
                   );
                 })}

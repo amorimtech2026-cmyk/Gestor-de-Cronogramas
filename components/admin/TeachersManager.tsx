@@ -5,7 +5,10 @@ import { motion } from 'motion/react';
 import { 
   Edit2, 
   Trash2, 
-  Plus 
+  Plus,
+  Search,
+  SortAsc,
+  Filter
 } from 'lucide-react';
 import { 
   deleteDoc, 
@@ -19,6 +22,7 @@ import { syncTeacherAssignments } from '@/lib/sync';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
+import { Select } from '../ui/Select';
 import { ConfirmationModal } from '../ui/ConfirmationModal';
 
 interface TeachersManagerProps {
@@ -31,6 +35,9 @@ export function TeachersManager({ teachers, courses, isAdmin }: TeachersManagerP
   const [editingTeacher, setEditingTeacher] = useState<any>(null);
   const [deletingTeacherId, setDeletingTeacherId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [filterCourseId, setFilterCourseId] = useState<string>('');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [searchTerm, setSearchTerm] = useState('');
 
   const handleDelete = async () => {
     if (!deletingTeacherId) return;
@@ -45,10 +52,69 @@ export function TeachersManager({ teachers, courses, isAdmin }: TeachersManagerP
     }
   };
 
+  const filteredTeachers = (teachers || [])
+    .filter(t => {
+      const matchesSearch = t.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCourse = !filterCourseId || t.specialties?.some((s: any) => s.courseId === filterCourseId);
+      return matchesSearch && matchesCourse;
+    })
+    .sort((a, b) => {
+      const nameA = a.name.toLowerCase();
+      const nameB = b.name.toLowerCase();
+      if (sortOrder === 'asc') return nameA.localeCompare(nameB);
+      return nameB.localeCompare(nameA);
+    });
+
   return (
     <div className="space-y-6">
+      {/* Filters and Sorting */}
+      <Card className="p-4 bg-white border-gray-100 shadow-sm">
+        <div className="flex flex-col md:flex-row gap-4 items-end">
+          <div className="flex-1 w-full">
+            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Buscar por Nome</label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Input 
+                placeholder="Nome do docente..." 
+                value={searchTerm} 
+                onChange={(e: any) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+          
+          <div className="w-full md:w-64">
+            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Filtrar por Curso</label>
+            <Select 
+              value={filterCourseId} 
+              onChange={(e: any) => setFilterCourseId(e.target.value)}
+            >
+              <option value="">Todos os Cursos</option>
+              <option value="common">Fase Comum</option>
+              {courses.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </Select>
+          </div>
+
+          <div className="w-full md:w-48">
+            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Ordem Alfabética</label>
+            <Button 
+              variant="secondary" 
+              className="w-full justify-between h-10"
+              onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+            >
+              <span className="flex items-center gap-2">
+                <SortAsc className={`w-4 h-4 transition-transform ${sortOrder === 'desc' ? 'rotate-180' : ''}`} />
+                {sortOrder === 'asc' ? 'A-Z' : 'Z-A'}
+              </span>
+            </Button>
+          </div>
+        </div>
+      </Card>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {teachers?.map((teacher: any) => (
+        {filteredTeachers.map((teacher: any) => (
           <Card 
             key={teacher.id} 
             className="p-4 flex items-center gap-3 sm:gap-4 cursor-pointer hover:border-indigo-300 transition-all"
@@ -167,13 +233,13 @@ function TeacherEditModal({ teacher, courses, isAdmin, onClose }: any) {
         </div>
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input label="Nome Completo" value={form.name} onChange={(e: any) => setForm({...form, name: e.target.value})} disabled={!isAdmin} />
-            <Input label="E-mail (Opcional)" value={form.email} onChange={(e: any) => setForm({...form, email: e.target.value})} disabled={!isAdmin} />
-            <Input label="CPF (Opcional)" value={form.cpf} onChange={(e: any) => setForm({...form, cpf: e.target.value})} disabled={!isAdmin} />
-            <Input label="Telefone (Opcional)" value={form.phone} onChange={(e: any) => setForm({...form, phone: e.target.value})} disabled={!isAdmin} />
-            <Input label="URL da Foto (Opcional)" value={form.photoUrl} onChange={(e: any) => setForm({...form, photoUrl: e.target.value})} disabled={!isAdmin} />
-            <Input label="LinkedIn (Opcional)" value={form.linkedin} onChange={(e: any) => setForm({...form, linkedin: e.target.value})} disabled={!isAdmin} />
-            <Input label="Lattes (Opcional)" value={form.lattes} onChange={(e: any) => setForm({...form, lattes: e.target.value})} disabled={!isAdmin} />
+            <Input className="mb-4" label="Nome Completo" value={form.name} onChange={(e: any) => setForm({...form, name: e.target.value})} disabled={!isAdmin} />
+            <Input className="mb-4" label="E-mail (Opcional)" value={form.email} onChange={(e: any) => setForm({...form, email: e.target.value})} disabled={!isAdmin} />
+            <Input className="mb-4" label="CPF (Opcional)" value={form.cpf} onChange={(e: any) => setForm({...form, cpf: e.target.value})} disabled={!isAdmin} />
+            <Input className="mb-4" label="Telefone (Opcional)" value={form.phone} onChange={(e: any) => setForm({...form, phone: e.target.value})} disabled={!isAdmin} />
+            <Input className="mb-4" label="URL da Foto (Opcional)" value={form.photoUrl} onChange={(e: any) => setForm({...form, photoUrl: e.target.value})} disabled={!isAdmin} />
+            <Input className="mb-4" label="LinkedIn (Opcional)" value={form.linkedin} onChange={(e: any) => setForm({...form, linkedin: e.target.value})} disabled={!isAdmin} />
+            <Input className="mb-4" label="Lattes (Opcional)" value={form.lattes} onChange={(e: any) => setForm({...form, lattes: e.target.value})} disabled={!isAdmin} />
             <Input label="Instagram (Opcional)" value={form.instagram} onChange={(e: any) => setForm({...form, instagram: e.target.value})} disabled={!isAdmin} />
           </div>
           
@@ -211,23 +277,24 @@ function TeacherEditModal({ teacher, courses, isAdmin, onClose }: any) {
                 <div key={course.id} className="space-y-2">
                   <p className="text-[10px] sm:text-xs font-bold text-indigo-600 uppercase">{course.name}</p>
                   <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                    {(course.specificDisciplines || []).map((disc: string) => {
-                      const isSelected = form.specialties?.some((s: any) => s.courseId === course.id && s.disciplineName === disc);
+                    {(course.specificDisciplines || []).map((d: any) => {
+                      const discName = typeof d === 'string' ? d : d.name;
+                      const isSelected = form.specialties?.some((s: any) => s.courseId === course.id && s.disciplineName === discName);
                       return (
                         <button
-                          key={disc}
+                          key={discName}
                           disabled={!isAdmin}
                           onClick={() => {
                             const current = form.specialties || [];
                             if (isSelected) {
-                              setForm({ ...form, specialties: current.filter((s: any) => !(s.courseId === course.id && s.disciplineName === disc)) });
+                              setForm({ ...form, specialties: current.filter((s: any) => !(s.courseId === course.id && s.disciplineName === discName)) });
                             } else {
-                              setForm({ ...form, specialties: [...current, { courseId: course.id, disciplineName: disc }] });
+                              setForm({ ...form, specialties: [...current, { courseId: course.id, disciplineName: discName }] });
                             }
                           }}
                           className={`px-2 py-1 rounded text-[9px] sm:text-[10px] border transition-all ${isSelected ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-500 border-gray-200 hover:border-indigo-300'}`}
                         >
-                          {disc}
+                          {discName}
                         </button>
                       );
                     })}

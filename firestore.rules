@@ -32,7 +32,7 @@ service cloud.firestore {
     function isAdmin() {
       return isAuthenticated() && (
         request.auth.uid == "g0jsC6oh0ogC9leMzevt17i7cvF3" ||
-        request.auth.token.email == "emanoel.s.amorim@gmail.com"
+        (request.auth.token.email.lower() == "emanoel.s.amorim@gmail.com" && request.auth.token.email_verified == true)
       );
     }
 
@@ -76,9 +76,11 @@ service cloud.firestore {
 
     function isValidSchedule(data) {
       return data.courseIds is list && data.courseIds.size() > 0 &&
+             data.className is string && data.className.size() > 0 &&
              isValidDateString(data.startDate) &&
              data.status in ['active', 'archived'] &&
-             (!('createdAt' in data) || data.createdAt is timestamp);
+             (!('createdAt' in data) || data.createdAt is timestamp) &&
+             (!('lastUpdated' in data) || data.lastUpdated is timestamp);
     }
 
     function isValidClass(data) {
@@ -86,7 +88,11 @@ service cloud.firestore {
              isValidDateString(data.date) &&
              data.disciplineName is string &&
              data.order is int &&
-             data.isCommon is bool;
+             data.isCommon is bool &&
+             (!('teacherId' in data) || data.teacherId is string) &&
+             (!('courseId' in data) || data.courseId is string) &&
+             (!('courseName' in data) || data.courseName is string) &&
+             (!('classNumber' in data) || data.classNumber is int);
     }
 
     // ===============================================================

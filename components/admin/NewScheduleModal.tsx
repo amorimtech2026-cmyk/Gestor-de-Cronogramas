@@ -58,7 +58,11 @@ export function NewScheduleModal({ courses, holidays, teachers, onClose }: NewSc
   const [specificOrders, setSpecificOrders] = useState<Record<string, any[]>>({});
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -68,10 +72,8 @@ export function NewScheduleModal({ courses, holidays, teachers, onClose }: NewSc
     let nextSelected;
     if (selectedCourses.includes(id)) {
       nextSelected = selectedCourses.filter(i => i !== id);
-    } else if (selectedCourses.length < 3) {
-      nextSelected = [...selectedCourses, id];
     } else {
-      return;
+      nextSelected = [...selectedCourses, id];
     }
 
     setSelectedCourses(nextSelected);
@@ -85,8 +87,8 @@ export function NewScheduleModal({ courses, holidays, teachers, onClose }: NewSc
         if (specificOrders[courseId]) {
           newOrders[courseId] = specificOrders[courseId];
         } else {
-          newOrders[courseId] = (course.specificDisciplines || []).map((d: string, i: number) => ({
-            name: d,
+          newOrders[courseId] = (course.specificDisciplines || []).map((d: any, i: number) => ({
+            name: typeof d === 'string' ? d : d.name,
             id: `spec-${course.id}-${i}`
           }));
         }
@@ -164,6 +166,7 @@ export function NewScheduleModal({ courses, holidays, teachers, onClose }: NewSc
     try {
       const scheduleRef = await addDoc(collection(db, 'schedules'), {
         courseIds: selectedCourses,
+        courseNames: selectedCourses.map(id => courses.find(c => c.id === id)?.name || 'Curso'),
         startDate,
         className,
         status: 'active',
@@ -309,44 +312,52 @@ export function NewScheduleModal({ courses, holidays, teachers, onClose }: NewSc
               <div className="space-y-6">
                 <h4 className="font-bold text-gray-700 border-b pb-2 text-sm sm:text-base">Disciplinas Comuns</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {preview.common.filter((_: any, i: number) => i % 2 === 0).map((c: any, i: number) => (
-                    <Card key={i} className="p-4 space-y-3">
-                      <div className="flex justify-between items-start">
-                        <div className="flex items-center gap-3">
-                          <div className="w-6 h-6 bg-indigo-100 text-indigo-600 flex items-center justify-center rounded-full text-[10px] font-bold shrink-0">
-                            {c.order}
+                  {/* Group common by order */}
+                  {Array.from(new Set(preview.common.map((c: any) => c.order))).sort((a: any, b: any) => a - b).map((order: any) => {
+                    const classGroup = preview.common.filter((c: any) => c.order === order);
+                    const firstClass = classGroup[0];
+                    return (
+                      <Card key={order} className="p-4 space-y-3">
+                        <div className="flex justify-between items-start">
+                          <div className="flex items-center gap-3">
+                            <div className="w-6 h-6 bg-indigo-100 text-indigo-600 flex items-center justify-center rounded-full text-[10px] font-bold shrink-0">
+                              {order}
+                            </div>
+                            <p className="font-bold text-sm text-gray-900 truncate">{firstClass.disciplineName}</p>
                           </div>
-                          <p className="font-bold text-sm text-gray-900 truncate">{c.disciplineName}</p>
                         </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2 text-[10px] text-gray-500">
-                        <div className="bg-gray-50 p-1 rounded">Aula 1: {format(parseISO(c.date), 'dd/MM/yyyy')}</div>
-                        <div className="bg-gray-50 p-1 rounded">Aula 2: {format(parseISO(preview.common[i*2+1].date), 'dd/MM/yyyy')}</div>
-                      </div>
-                      <Select 
-                        label="Docente" 
-                        options={(teachers || [])
-                          .sort((a: any, b: any) => {
-                            const aIsSpec = a.specialties?.some((s: any) => s.disciplineName === c.disciplineName);
-                            const bIsSpec = b.specialties?.some((s: any) => s.disciplineName === c.disciplineName);
-                            if (aIsSpec && !bIsSpec) return -1;
-                            if (!aIsSpec && bIsSpec) return 1;
-                            return a.name.localeCompare(b.name);
-                          })
-                          .map((t: any) => {
-                            const isSpec = t.specialties?.some((s: any) => s.disciplineName === c.disciplineName);
-                            return { value: t.id, label: `${t.name}${isSpec ? ' ★' : ''}` };
-                          })} 
-                        value={c.teacherId} 
-                        onChange={(e: any) => {
-                          const newCommon = [...preview.common];
-                          newCommon[i*2].teacherId = e.target.value;
-                          newCommon[i*2+1].teacherId = e.target.value;
-                          setPreview({ ...preview, common: newCommon });
-                        }}
-                      />
-                    </Card>
-                  ))}
+                        <div className="grid grid-cols-1 gap-2 text-[10px] text-gray-500">
+                          {classGroup.map((c: any, idx: number) => (
+                            <div key={idx} className="bg-gray-50 p-1 rounded">
+                              {classGroup.length > 1 ? `Aula ${idx + 1}: ` : ''}{format(parseISO(c.date), 'dd/MM/yyyy')}
+                            </div>
+                          ))}
+                        </div>
+                        <Select 
+                          label="Docente" 
+                          options={(teachers || [])
+                            .sort((a: any, b: any) => {
+                              const aIsSpec = a.specialties?.some((s: any) => s.disciplineName === firstClass.disciplineName);
+                              const bIsSpec = b.specialties?.some((s: any) => s.disciplineName === firstClass.disciplineName);
+                              if (aIsSpec && !bIsSpec) return -1;
+                              if (!aIsSpec && bIsSpec) return 1;
+                              return a.name.localeCompare(b.name);
+                            })
+                            .map((t: any) => {
+                              const isSpec = t.specialties?.some((s: any) => s.disciplineName === firstClass.disciplineName);
+                              return { value: t.id, label: `${t.name}${isSpec ? ' ★' : ''}` };
+                            })} 
+                          value={firstClass.teacherId} 
+                          onChange={(e: any) => {
+                            const newCommon = preview.common.map((c: any) => 
+                              c.order === order ? { ...c, teacherId: e.target.value } : c
+                            );
+                            setPreview({ ...preview, common: newCommon });
+                          }}
+                        />
+                      </Card>
+                    );
+                  })}
                 </div>
 
                 {Object.keys(preview.specific).map(courseId => (
@@ -355,44 +366,52 @@ export function NewScheduleModal({ courses, holidays, teachers, onClose }: NewSc
                       {courses.find((c: any) => c.id === courseId)?.name}
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {preview.specific[courseId].filter((_: any, i: number) => i % 2 === 0).map((c: any, i: number) => (
-                        <Card key={i} className="p-4 space-y-3">
-                          <div className="flex justify-between items-start">
-                            <div className="flex items-center gap-3">
-                              <div className="w-6 h-6 bg-amber-100 text-amber-600 flex items-center justify-center rounded-full text-[10px] font-bold shrink-0">
-                                {c.order}
+                      {Array.from(new Set(preview.specific[courseId].map((c: any) => c.order))).sort((a: any, b: any) => a - b).map((order: any) => {
+                        const classGroup = preview.specific[courseId].filter((c: any) => c.order === order);
+                        const firstClass = classGroup[0];
+                        return (
+                          <Card key={order} className="p-4 space-y-3">
+                            <div className="flex justify-between items-start">
+                              <div className="flex items-center gap-3">
+                                <div className="w-6 h-6 bg-amber-100 text-amber-600 flex items-center justify-center rounded-full text-[10px] font-bold shrink-0">
+                                  {order}
+                                </div>
+                                <p className="font-bold text-sm text-gray-900 truncate">{firstClass.disciplineName}</p>
                               </div>
-                              <p className="font-bold text-sm text-gray-900 truncate">{c.disciplineName}</p>
                             </div>
-                          </div>
-                          <div className="grid grid-cols-2 gap-2 text-[10px] text-gray-500">
-                            <div className="bg-gray-50 p-1 rounded">Aula 1: {format(parseISO(c.date), 'dd/MM/yyyy')}</div>
-                            <div className="bg-gray-50 p-1 rounded">Aula 2: {format(parseISO(preview.specific[courseId][i*2+1].date), 'dd/MM/yyyy')}</div>
-                          </div>
-                          <Select 
-                            label="Docente" 
-                            options={(teachers || [])
-                              .sort((a: any, b: any) => {
-                                const aIsSpec = a.specialties?.some((s: any) => s.disciplineName === c.disciplineName);
-                                const bIsSpec = b.specialties?.some((s: any) => s.disciplineName === c.disciplineName);
-                                if (aIsSpec && !bIsSpec) return -1;
-                                if (!aIsSpec && bIsSpec) return 1;
-                                return a.name.localeCompare(b.name);
-                              })
-                              .map((t: any) => {
-                                const isSpec = t.specialties?.some((s: any) => s.disciplineName === c.disciplineName);
-                                return { value: t.id, label: `${t.name}${isSpec ? ' ★' : ''}` };
-                              })} 
-                            value={c.teacherId} 
-                            onChange={(e: any) => {
-                              const newSpecific = { ...preview.specific };
-                              newSpecific[courseId][i*2].teacherId = e.target.value;
-                              newSpecific[courseId][i*2+1].teacherId = e.target.value;
-                              setPreview({ ...preview, specific: newSpecific });
-                            }}
-                          />
-                        </Card>
-                      ))}
+                            <div className="grid grid-cols-1 gap-2 text-[10px] text-gray-500">
+                              {classGroup.map((c: any, idx: number) => (
+                                <div key={idx} className="bg-gray-50 p-1 rounded">
+                                  {classGroup.length > 1 ? `Aula ${idx + 1}: ` : ''}{format(parseISO(c.date), 'dd/MM/yyyy')}
+                                </div>
+                              ))}
+                            </div>
+                            <Select 
+                              label="Docente" 
+                              options={(teachers || [])
+                                .sort((a: any, b: any) => {
+                                  const aIsSpec = a.specialties?.some((s: any) => s.disciplineName === firstClass.disciplineName);
+                                  const bIsSpec = b.specialties?.some((s: any) => s.disciplineName === firstClass.disciplineName);
+                                  if (aIsSpec && !bIsSpec) return -1;
+                                  if (!aIsSpec && bIsSpec) return 1;
+                                  return a.name.localeCompare(b.name);
+                                })
+                                .map((t: any) => {
+                                  const isSpec = t.specialties?.some((s: any) => s.disciplineName === firstClass.disciplineName);
+                                  return { value: t.id, label: `${t.name}${isSpec ? ' ★' : ''}` };
+                                })} 
+                              value={firstClass.teacherId} 
+                              onChange={(e: any) => {
+                                const newSpecific = { ...preview.specific };
+                                newSpecific[courseId] = newSpecific[courseId].map((c: any) => 
+                                  c.order === order ? { ...c, teacherId: e.target.value } : c
+                                );
+                                setPreview({ ...preview, specific: newSpecific });
+                              }}
+                            />
+                          </Card>
+                        );
+                      })}
                     </div>
                   </div>
                 ))}
@@ -404,7 +423,7 @@ export function NewScheduleModal({ courses, holidays, teachers, onClose }: NewSc
         <div className="p-4 sm:p-6 border-t border-gray-200 bg-gray-50 flex justify-end gap-2 sm:gap-3 shrink-0">
           <Button variant="secondary" onClick={onClose}>Cancelar</Button>
           {step === 1 ? (
-            <Button disabled={selectedCourses.length === 0 || !startDate} onClick={generatePreview} className="flex items-center gap-2">
+            <Button disabled={selectedCourses.length === 0 || !startDate || !className.trim()} onClick={generatePreview} className="flex items-center gap-2">
               Gerar Cronograma <ChevronRight className="w-4 h-4" />
             </Button>
           ) : (

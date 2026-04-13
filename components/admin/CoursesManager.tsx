@@ -5,7 +5,12 @@ import { motion } from 'motion/react';
 import { 
   Edit2, 
   Trash2, 
-  Plus 
+  Plus,
+  FileText,
+  Printer,
+  ChevronDown,
+  ChevronUp,
+  BookOpen
 } from 'lucide-react';
 import { 
   collection, 
@@ -50,7 +55,149 @@ export function CoursesManager({ courses, isAdmin }: CoursesManagerProps) {
   const [editingCourse, setEditingCourse] = useState<any>(null);
   const [deletingCourseId, setDeletingCourseId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isCleaning, setIsCleaning] = useState(false);
   
+  const handleCleanup = async () => {
+    if (!isAdmin) return;
+    setIsCleaning(true);
+    try {
+      // 1. Group courses by name
+      const groups = new Map();
+      courses.forEach(c => {
+        const name = c.name.trim().toLowerCase();
+        if (!groups.has(name)) groups.set(name, []);
+        groups.get(name).push(c);
+      });
+
+      let totalCleaned = 0;
+      let totalSynced = 0;
+
+      for (const [name, group] of groups.entries()) {
+        if (group.length > 1) {
+          // Keep the one with most disciplines or the first one
+          const master = group.sort((a: any, b: any) => (b.specificDisciplines?.length || 0) - (a.specificDisciplines?.length || 0))[0];
+          const slaves = group.filter((c: any) => c.id !== master.id);
+          const slaveIds = slaves.map((c: any) => c.id);
+
+          // Update all classes pointing to slaves
+          const classesSnap = await getDocs(collection(db, 'classes'));
+          for (const classDoc of classesSnap.docs) {
+            const data = classDoc.data();
+            if (slaveIds.includes(data.courseId)) {
+              await updateDoc(classDoc.ref, { courseId: master.id });
+            }
+          }
+
+          // Update all schedules pointing to slaves
+          const schedulesSnap = await getDocs(collection(db, 'schedules'));
+          for (const scheduleDoc of schedulesSnap.docs) {
+            const data = scheduleDoc.data();
+            if (data.courseIds && data.courseIds.some((id: string) => slaveIds.includes(id))) {
+              const newCourseIds = Array.from(new Set(data.courseIds.map((id: string) => slaveIds.includes(id) ? master.id : id)));
+              await updateDoc(scheduleDoc.ref, { courseIds: newCourseIds });
+            }
+          }
+
+          // Update teacher specialties
+          const teachersSnap = await getDocs(collection(db, 'teachers'));
+          for (const teacherDoc of teachersSnap.docs) {
+            const data = teacherDoc.data();
+            if (data.specialties && data.specialties.some((s: any) => slaveIds.includes(s.courseId))) {
+              const newSpecialties = data.specialties.map((s: any) => 
+                slaveIds.includes(s.courseId) ? { ...s, courseId: master.id } : s
+              );
+              await updateDoc(teacherDoc.ref, { specialties: newSpecialties });
+            }
+          }
+
+          // Delete slaves
+          for (const slave of slaves) {
+            await deleteDoc(doc(db, 'courses', slave.id));
+            totalCleaned++;
+          }
+        }
+      }
+
+      // 2. Cross-reference teachers from schedules
+      const allSchedulesSnap = await getDocs(collection(db, 'schedules'));
+      const allTeachersSnap = await getDocs(collection(db, 'teachers'));
+      const teachersMap = new Map();
+      allTeachersSnap.docs.forEach(d => teachersMap.set(d.id, { ref: d.ref, ...d.data() }));
+
+      const allClassesSnap = await getDocs(collection(db, 'classes'));
+      for (const classDoc of allClassesSnap.docs) {
+        const classData = classDoc.data();
+        if (classData.teacherId && classData.courseId && classData.disciplineName) {
+          const teacher = teachersMap.get(classData.teacherId);
+          if (teacher) {
+            const specialties = teacher.specialties || [];
+            const alreadyHas = specialties.some((s: any) => 
+              s.courseId === classData.courseId && s.disciplineName === classData.disciplineName
+            );
+            
+            if (!alreadyHas) {
+              const newSpecialties = [...specialties, { 
+                courseId: classData.courseId, 
+                disciplineName: classData.disciplineName 
+              }];
+              await updateDoc(teacher.ref, { specialties: newSpecialties });
+              teacher.specialties = newSpecialties; // Update local map to avoid redundant writes
+              totalSynced++;
+            }
+          }
+        }
+      }
+
+      // 3. Fix broken course names in schedules
+      const schedulesToFixSnap = await getDocs(collection(db, 'schedules'));
+      const classesForFixSnap = await getDocs(collection(db, 'classes'));
+      let schedulesFixed = 0;
+
+      // Build a global map of courseId -> courseName from all classes
+      const globalCourseNameMap = new Map();
+      classesForFixSnap.docs.forEach(d => {
+        const data = d.data();
+        if (data.courseId && data.courseName) {
+          globalCourseNameMap.set(data.courseId, data.courseName);
+        }
+      });
+
+      for (const scheduleDoc of schedulesToFixSnap.docs) {
+        const scheduleData = scheduleDoc.data();
+        
+        const newCourseNames = scheduleData.courseIds.map((cid: string) => {
+          // 1. Try to find in current courses list (passed as prop)
+          const course = courses.find(c => c.id === cid);
+          if (course) return course.name;
+
+          // 2. Try to find in our global map from classes
+          if (globalCourseNameMap.has(cid)) return globalCourseNameMap.get(cid);
+
+          // 3. If cid itself looks like a name (not a Firebase ID)
+          if (cid.length > 15 && !cid.includes(' ')) return 'Curso'; // Likely an ID
+          return cid; // Likely already a name
+        });
+
+        // Only update if names changed or were missing
+        const currentNames = scheduleData.courseNames || [];
+        const hasMissingNames = currentNames.length !== newCourseNames.length;
+        const namesChanged = JSON.stringify(currentNames) !== JSON.stringify(newCourseNames);
+
+        if (hasMissingNames || namesChanged) {
+          await updateDoc(scheduleDoc.ref, { courseNames: newCourseNames });
+          schedulesFixed++;
+        }
+      }
+
+      alert(`Limpeza concluída!\n- ${totalCleaned} cursos duplicados removidos.\n- ${totalSynced} especialidades de professores sincronizadas.\n- ${schedulesFixed} cronogramas corrigidos.`);
+    } catch (e) {
+      console.error("Erro na limpeza:", e);
+      alert("Ocorreu um erro durante a limpeza.");
+    } finally {
+      setIsCleaning(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (!deletingCourseId) return;
     setIsDeleting(true);
@@ -64,8 +211,204 @@ export function CoursesManager({ courses, isAdmin }: CoursesManagerProps) {
     }
   };
 
+  // Função específica para corrigir a matriz do curso de Neuroarquitetura conforme solicitado pelo usuário
+  const fixNeuroMatrix = async () => {
+    if (!isAdmin) return;
+    setIsCleaning(true);
+    try {
+      const neuroCourse = courses.find(c => c.name.toLowerCase() === 'neuroarquitetura');
+      if (!neuroCourse) {
+        alert("Curso 'Neuroarquitetura' não encontrado.");
+        return;
+      }
+
+      const newMatrix = [
+        "Neurociência Aplicada à Arquitetura",
+        "Ritmo Biológico e Fatores Humanos",
+        "Neuroarquitetura e Design Cognitivo",
+        "Espaços Residenciais e Comerciais: Aplicações e Princípios da Neurarquitetura",
+        "Espaços Coorporativos: Aplicações e Princípios da Neurarquitetura",
+        "Estímulos e Percepções: Neuroarquitetura em Espaços Verdes",
+        "Neuroiluminação",
+        "Design Biofílico",
+        "Neurourbanismo"
+      ];
+
+      // Convert to new object structure if needed
+      const objectMatrix = newMatrix.map(name => ({ name, syllabus: '' }));
+
+      await updateDoc(doc(db, 'courses', neuroCourse.id), {
+        specificDisciplines: objectMatrix
+      });
+
+      alert("Matriz de Neuroarquitetura corrigida com sucesso!");
+    } catch (e) {
+      console.error("Erro ao corrigir matriz:", e);
+      alert("Erro ao corrigir matriz.");
+    } finally {
+      setIsCleaning(false);
+    }
+  };
+
+  const generateCoursePDF = (course: any) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const disciplines = course.specificDisciplines || [];
+    
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Relatório do Curso - ${course.name}</title>
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap');
+          body { 
+            font-family: 'Inter', sans-serif; 
+            padding: 40px; 
+            color: #1f2937;
+            line-height: 1.5;
+          }
+          .header { 
+            text-align: center; 
+            border-bottom: 3px solid #4f46e5; 
+            padding-bottom: 20px; 
+            margin-bottom: 30px; 
+          }
+          .header h1 { 
+            margin: 0; 
+            color: #312e81; 
+            font-size: 28px; 
+            font-weight: 900;
+            text-transform: uppercase;
+          }
+          .header p { margin: 5px 0 0; color: #6b7280; font-weight: 500; }
+          
+          .section { margin-bottom: 30px; }
+          .section-title { 
+            font-size: 14px; 
+            font-weight: 900; 
+            color: #4f46e5; 
+            text-transform: uppercase; 
+            letter-spacing: 0.05em;
+            margin-bottom: 15px;
+            border-left: 4px solid #4f46e5;
+            padding-left: 10px;
+          }
+          
+          .info-grid { 
+            display: grid; 
+            grid-template-columns: repeat(2, 1fr); 
+            gap: 15px; 
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 12px;
+          }
+          .info-item { font-size: 13px; }
+          .info-label { font-weight: 700; color: #374151; }
+          
+          .description { font-size: 14px; text-align: justify; color: #4b5563; }
+          
+          .discipline-item { 
+            margin-bottom: 20px; 
+            padding-bottom: 15px; 
+            border-bottom: 1px solid #e5e7eb;
+            page-break-inside: avoid;
+          }
+          .discipline-name { font-size: 15px; font-weight: 700; color: #111827; margin-bottom: 5px; }
+          .discipline-syllabus { font-size: 13px; color: #4b5563; font-style: italic; }
+          
+          .footer { 
+            margin-top: 50px; 
+            font-size: 10px; 
+            color: #9ca3af; 
+            text-align: center; 
+            border-top: 1px solid #e5e7eb;
+            padding-top: 20px;
+          }
+          
+          @media print {
+            body { padding: 0; }
+            .no-print { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>${course.name}</h1>
+          <p>Relatório Técnico do Curso</p>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Informações Gerais</div>
+          <div class="info-grid">
+            <div class="info-item"><span class="info-label">Carga Horária:</span> ${course.workload || 'N/A'}</div>
+            <div class="info-item"><span class="info-label">Duração:</span> ${course.duration || 'N/A'}</div>
+            <div class="info-item"><span class="info-label">Formato:</span> ${course.format || 'N/A'}</div>
+            <div class="info-item"><span class="info-label">Dias de Aula:</span> ${course.classDays || 'N/A'}</div>
+            <div class="info-item"><span class="info-label">Horário:</span> ${course.classTime || 'N/A'}</div>
+            <div class="info-item"><span class="info-label">Status:</span> ${course.enrollmentStatus || 'N/A'}</div>
+          </div>
+        </div>
+
+        ${course.fullDescription ? `
+        <div class="section">
+          <div class="section-title">Descrição do Curso</div>
+          <div class="description">${course.fullDescription.replace(/\n/g, '<br>')}</div>
+        </div>
+        ` : ''}
+
+        <div class="section">
+          <div class="section-title">Matriz Curricular Detalhada</div>
+          ${disciplines.map((d: any) => `
+            <div class="discipline-item">
+              <div class="discipline-name">${typeof d === 'string' ? d : d.name}</div>
+              ${(typeof d === 'object' && d.syllabus) ? `<div class="discipline-syllabus">${d.syllabus.replace(/\n/g, '<br>')}</div>` : ''}
+            </div>
+          `).join('')}
+        </div>
+
+        <div class="footer">
+          Gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}<br>
+          Esuda Acadêmico - Gestão de Cronogramas
+        </div>
+
+        <script>
+          window.onload = () => {
+            window.print();
+            // window.close();
+          };
+        </script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
+  };
+
   return (
     <div className="space-y-6">
+      {isAdmin && (
+        <div className="flex flex-wrap justify-end gap-2">
+          <Button 
+            variant="secondary" 
+            onClick={fixNeuroMatrix} 
+            disabled={isCleaning}
+            className="bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100"
+          >
+            {isCleaning ? 'Corrigindo...' : 'Corrigir Matriz Neuroarquitetura'}
+          </Button>
+          <Button 
+            variant="secondary" 
+            onClick={handleCleanup} 
+            disabled={isCleaning}
+            className="bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
+          >
+            {isCleaning ? 'Limpando...' : 'Limpar Duplicados e Sincronizar Professores'}
+          </Button>
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {courses.map((course: any) => (
           <Card 
@@ -78,6 +421,14 @@ export function CoursesManager({ courses, isAdmin }: CoursesManagerProps) {
               <p className="text-xs text-gray-500">{course.specificDisciplines?.length || 0} Disciplinas Específicas</p>
             </div>
             <div className="flex items-center gap-2">
+              <button 
+                onClick={(e) => { e.stopPropagation(); generateCoursePDF(course); }} 
+                className="text-indigo-500 hover:bg-indigo-50 p-2 rounded flex items-center gap-1 text-xs font-bold"
+                title="Gerar PDF do Curso"
+              >
+                <Printer className="w-4 h-4" />
+                <span className="hidden sm:inline">PDF</span>
+              </button>
               {isAdmin && (
                 <button onClick={(e) => { e.stopPropagation(); setEditingCourse(course); }} className="text-indigo-500 hover:bg-indigo-50 p-2 rounded">
                   <Edit2 className="w-4 h-4" />
@@ -133,7 +484,13 @@ function CourseEditModal({ course, isAdmin, onClose }: any) {
   const [startDateInfo, setStartDateInfo] = useState(course.startDateInfo || '');
   const [enrollmentStatus, setEnrollmentStatus] = useState(course.enrollmentStatus || 'Abertas');
   const [websiteUrl, setWebsiteUrl] = useState(course.websiteUrl || '');
-  const [disciplines, setDisciplines] = useState([...(course.specificDisciplines || [])]);
+  const [disciplines, setDisciplines] = useState(
+    (course.specificDisciplines || []).map((d: any, i: number) => {
+      const name = typeof d === 'string' ? d : d.name;
+      const syllabus = typeof d === 'object' ? (d.syllabus || '') : '';
+      return { id: `disc-${i}-${Date.now()}`, name, syllabus, isExpanded: false };
+    })
+  );
   const [newDisc, setNewDisc] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -147,9 +504,9 @@ function CourseEditModal({ course, isAdmin, onClose }: any) {
   const handleDragEnd = (event: any) => {
     const { active, over } = event;
     if (active.id !== over.id) {
-      setDisciplines((items) => {
-        const oldIndex = items.indexOf(active.id);
-        const newIndex = items.indexOf(over.id);
+      setDisciplines((items: any[]) => {
+        const oldIndex = items.findIndex(item => item.id === active.id);
+        const newIndex = items.findIndex(item => item.id === over.id);
         return arrayMove(items, oldIndex, newIndex);
       });
     }
@@ -158,6 +515,9 @@ function CourseEditModal({ course, isAdmin, onClose }: any) {
   const handleSave = async () => {
     setSaving(true);
     try {
+      const disciplineData = disciplines.map((d: any) => ({ name: d.name, syllabus: d.syllabus || '' }));
+      const disciplineNames = disciplineData.map((d: any) => d.name);
+      
       // Update course document
       await updateDoc(doc(db, 'courses', course.id), {
         name,
@@ -173,15 +533,17 @@ function CourseEditModal({ course, isAdmin, onClose }: any) {
         startDateInfo,
         enrollmentStatus,
         websiteUrl,
-        specificDisciplines: disciplines
+        specificDisciplines: disciplineData
       });
 
       // Create a map of renamed disciplines
       const oldDisciplines = course.specificDisciplines || [];
       const renamedMap = new Map();
-      disciplines.forEach((newName, i) => {
-        if (oldDisciplines[i] && oldDisciplines[i] !== newName) {
-          renamedMap.set(oldDisciplines[i], newName);
+      disciplineNames.forEach((newName: string, i: number) => {
+        const oldD = oldDisciplines[i];
+        const oldName = typeof oldD === 'string' ? oldD : oldD?.name;
+        if (oldName && oldName !== newName) {
+          renamedMap.set(oldName, newName);
         }
       });
 
@@ -234,17 +596,29 @@ function CourseEditModal({ course, isAdmin, onClose }: any) {
 
   const addDisc = () => {
     if (!newDisc) return;
-    setDisciplines([...disciplines, newDisc]);
+    setDisciplines([...disciplines, { id: `new-${Date.now()}`, name: newDisc, syllabus: '', isExpanded: true }]);
     setNewDisc('');
   };
 
   const removeDisc = (index: number) => {
-    setDisciplines(disciplines.filter((_, i) => i !== index));
+    setDisciplines(disciplines.filter((_: any, i: number) => i !== index));
   };
 
   const updateDiscName = (index: number, newName: string) => {
     const next = [...disciplines];
-    next[index] = newName;
+    next[index] = { ...next[index], name: newName };
+    setDisciplines(next);
+  };
+
+  const updateDiscSyllabus = (index: number, newSyllabus: string) => {
+    const next = [...disciplines];
+    next[index] = { ...next[index], syllabus: newSyllabus };
+    setDisciplines(next);
+  };
+
+  const toggleExpand = (index: number) => {
+    const next = [...disciplines];
+    next[index] = { ...next[index], isExpanded: !next[index].isExpanded };
     setDisciplines(next);
   };
 
@@ -323,22 +697,45 @@ function CourseEditModal({ course, isAdmin, onClose }: any) {
                 onDragEnd={handleDragEnd}
               >
                 <SortableContext 
-                  items={disciplines}
+                  items={disciplines.map((d: any) => d.id)}
                   strategy={verticalListSortingStrategy}
                 >
-                  {disciplines.map((disc, i) => (
-                    <SortableItem key={disc} id={disc}>
-                      <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border border-gray-200 pl-8">
-                        <Input 
-                          className="flex-1 border-none bg-transparent focus:ring-0 h-8 text-sm" 
-                          value={disc} 
-                          onChange={(e: any) => updateDiscName(i, e.target.value)}
-                          disabled={!isAdmin}
-                        />
-                        {isAdmin && (
-                          <button onClick={() => removeDisc(i)} className="text-red-400 hover:text-red-600 p-1">
-                            <Trash2 className="w-4 h-4" />
+                  {disciplines.map((disc: any, i: number) => (
+                    <SortableItem key={disc.id} id={disc.id}>
+                      <div className="flex flex-col gap-2 p-1.5 bg-gray-50 rounded-lg border border-gray-200 pl-8 group hover:border-indigo-200 transition-all">
+                        <div className="flex items-center gap-2">
+                          <input 
+                            className="flex-1 border-none bg-transparent focus:ring-2 focus:ring-indigo-500/20 focus:bg-white rounded px-2 h-8 text-sm outline-none font-medium text-gray-700 transition-all" 
+                            value={disc.name} 
+                            onChange={(e: any) => updateDiscName(i, e.target.value)}
+                            disabled={!isAdmin}
+                            placeholder="Nome da disciplina"
+                          />
+                          <button 
+                            onClick={() => toggleExpand(i)}
+                            className={`p-1 rounded hover:bg-gray-200 transition-colors ${disc.syllabus ? 'text-indigo-600' : 'text-gray-400'}`}
+                            title={disc.isExpanded ? "Recolher Ementa" : "Editar Ementa"}
+                          >
+                            {disc.isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                           </button>
+                          {isAdmin && (
+                            <button onClick={() => removeDisc(i)} className="text-red-400 hover:text-red-600 p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                        
+                        {disc.isExpanded && (
+                          <div className="px-2 pb-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                            <TextArea 
+                              placeholder="Digite a ementa da disciplina..."
+                              value={disc.syllabus}
+                              onChange={(e: any) => updateDiscSyllabus(i, e.target.value)}
+                              rows={3}
+                              className="text-xs"
+                              disabled={!isAdmin}
+                            />
+                          </div>
                         )}
                       </div>
                     </SortableItem>
