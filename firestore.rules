@@ -53,6 +53,7 @@ service cloud.firestore {
     // ===============================================================
     function isValidTeacher(data) {
       return data.name is string && data.name.size() > 0 &&
+             data.titulacao is string && data.titulacao.size() > 0 &&
              (!('email' in data) || (data.email is string)) &&
              (!('cpf' in data) || data.cpf is string) &&
              (!('phone' in data) || data.phone is string) &&
@@ -95,6 +96,12 @@ service cloud.firestore {
              (!('classNumber' in data) || data.classNumber is int);
     }
 
+    function isValidCommonDiscipline(data) {
+      return data.name is string && data.name.size() > 0 &&
+             data.order is int &&
+             (!('description' in data) || data.description is string);
+    }
+
     // ===============================================================
     // Match Rules
     // ===============================================================
@@ -131,6 +138,12 @@ service cloud.firestore {
     match /classes/{classId} {
       allow read: if true;
       allow create, update: if isAdmin() && isValidClass(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /commonDisciplines/{discId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && isValidCommonDiscipline(request.resource.data);
       allow delete: if isAdmin();
     }
   }

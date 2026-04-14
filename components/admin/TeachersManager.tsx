@@ -29,9 +29,10 @@ interface TeachersManagerProps {
   teachers: any[];
   courses: any[];
   isAdmin: boolean;
+  commonDisciplines: any[];
 }
 
-export function TeachersManager({ teachers, courses, isAdmin }: TeachersManagerProps) {
+export function TeachersManager({ teachers, courses, isAdmin, commonDisciplines }: TeachersManagerProps) {
   const [editingTeacher, setEditingTeacher] = useState<any>(null);
   const [deletingTeacherId, setDeletingTeacherId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -184,6 +185,7 @@ export function TeachersManager({ teachers, courses, isAdmin }: TeachersManagerP
           teacher={editingTeacher} 
           courses={courses} 
           isAdmin={isAdmin} 
+          commonDisciplines={commonDisciplines}
           onClose={() => setEditingTeacher(null)} 
         />
       )}
@@ -191,9 +193,10 @@ export function TeachersManager({ teachers, courses, isAdmin }: TeachersManagerP
   );
 }
 
-function TeacherEditModal({ teacher, courses, isAdmin, onClose }: any) {
+function TeacherEditModal({ teacher, courses, isAdmin, commonDisciplines, onClose }: any) {
   const [form, setForm] = useState({ 
     name: teacher.name || '', 
+    titulacao: teacher.titulacao || '',
     email: teacher.email || '', 
     cpf: teacher.cpf || '', 
     phone: teacher.phone || '', 
@@ -234,6 +237,7 @@ function TeacherEditModal({ teacher, courses, isAdmin, onClose }: any) {
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input className="mb-4" label="Nome Completo" value={form.name} onChange={(e: any) => setForm({...form, name: e.target.value})} disabled={!isAdmin} />
+            <Input className="mb-4" label="Titulação / Grau" value={form.titulacao} onChange={(e: any) => setForm({...form, titulacao: e.target.value})} disabled={!isAdmin} />
             <Input className="mb-4" label="E-mail (Opcional)" value={form.email} onChange={(e: any) => setForm({...form, email: e.target.value})} disabled={!isAdmin} />
             <Input className="mb-4" label="CPF (Opcional)" value={form.cpf} onChange={(e: any) => setForm({...form, cpf: e.target.value})} disabled={!isAdmin} />
             <Input className="mb-4" label="Telefone (Opcional)" value={form.phone} onChange={(e: any) => setForm({...form, phone: e.target.value})} disabled={!isAdmin} />
@@ -249,7 +253,7 @@ function TeacherEditModal({ teacher, courses, isAdmin, onClose }: any) {
             <div className="mb-6">
               <p className="text-[10px] sm:text-xs font-bold text-indigo-600 mb-2 uppercase">Disciplinas Comuns</p>
               <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                {COMMON_DISCIPLINES.map((disc: any) => {
+                {(commonDisciplines.length > 0 ? commonDisciplines : COMMON_DISCIPLINES).map((disc: any) => {
                   const isSelected = form.specialties?.some((s: any) => s.courseId === 'common' && s.disciplineName === disc.name);
                   return (
                     <button

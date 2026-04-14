@@ -25,6 +25,7 @@ import { SchedulesList } from './SchedulesList';
 import { CoursesManager } from './CoursesManager';
 import { TeachersManager } from './TeachersManager';
 import { HolidaysManager } from './HolidaysManager';
+import { CommonDisciplinesManager } from './CommonDisciplinesManager';
 import { TeacherListGenerator } from './TeacherListGenerator';
 import { NewScheduleModal } from './NewScheduleModal';
 import { NewCourseModal } from './NewCourseModal';
@@ -38,6 +39,7 @@ interface AdminPortalProps {
   courses: any[];
   holidays: any[];
   schedules: any[];
+  commonDisciplines: any[];
   isAdmin: boolean;
   seedData: () => Promise<void>;
 }
@@ -49,6 +51,7 @@ export function AdminPortal({
   courses, 
   holidays, 
   schedules, 
+  commonDisciplines,
   isAdmin, 
   seedData 
 }: AdminPortalProps) {
@@ -223,6 +226,12 @@ export function AdminPortal({
             onClick={() => { setActiveTab('teachers'); setIsSidebarOpen(false); }} 
           />
           <SidebarItem 
+            icon={<BookOpen />} 
+            label="Tronco Comum" 
+            active={activeTab === 'common-disciplines'} 
+            onClick={() => { setActiveTab('common-disciplines'); setIsSidebarOpen(false); }} 
+          />
+          <SidebarItem 
             icon={<AlertCircle />} 
             label="Feriados" 
             active={activeTab === 'holidays'} 
@@ -273,6 +282,7 @@ export function AdminPortal({
             {activeTab === 'schedules' ? 'Cronogramas' : 
              activeTab === 'courses' ? 'Cursos' :
              activeTab === 'teachers' ? 'Docentes' :
+             activeTab === 'common-disciplines' ? 'Tronco Comum' :
              activeTab === 'holidays' ? 'Feriados' :
              activeTab === 'teacher-list' ? 'Relação de Docentes' : 'Dashboard'}
           </h1>
@@ -306,9 +316,10 @@ export function AdminPortal({
             {activeTab === 'dashboard' && <DashboardOverview schedules={schedules} courses={courses} teachers={teachers} setActiveTab={setActiveTab} />}
             {activeTab === 'schedules' && <SchedulesList schedules={schedules} courses={courses} onSelect={(s) => setViewingScheduleId(s.id)} isAdmin={isAdmin} />}
             {activeTab === 'courses' && <CoursesManager courses={courses} isAdmin={isAdmin} />}
-            {activeTab === 'teachers' && <TeachersManager teachers={teachers} courses={courses} isAdmin={isAdmin} />}
+            {activeTab === 'teachers' && <TeachersManager teachers={teachers} courses={courses} isAdmin={isAdmin} commonDisciplines={commonDisciplines} />}
+            {activeTab === 'common-disciplines' && <CommonDisciplinesManager isAdmin={isAdmin} />}
             {activeTab === 'holidays' && <HolidaysManager holidays={holidays} isAdmin={isAdmin} />}
-            {activeTab === 'teacher-list' && <TeacherListGenerator courses={courses} teachers={teachers} />}
+            {activeTab === 'teacher-list' && <TeacherListGenerator courses={courses} teachers={teachers} commonDisciplines={commonDisciplines} />}
           </motion.div>
         </AnimatePresence>
       </main>
@@ -319,6 +330,7 @@ export function AdminPortal({
           courses={courses} 
           holidays={holidays}
           teachers={teachers}
+          commonDisciplines={commonDisciplines}
           onClose={() => setIsNewScheduleModalOpen(false)} 
         />
       )}
@@ -332,6 +344,7 @@ export function AdminPortal({
         <NewTeacherModal 
           courses={courses}
           isAdmin={isAdmin}
+          commonDisciplines={commonDisciplines}
           onClose={() => setIsNewTeacherModalOpen(false)} 
         />
       )}

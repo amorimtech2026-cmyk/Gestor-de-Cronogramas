@@ -10,7 +10,7 @@
 
     /* Second, re-enable ONLY the print-specific containers and their parents */
     /* This ensures NO other portal content (like the main site) leaks into the PDF */
-    html, body {
+    html, body, #course-presentation-print {
       display: block !important;
       width: 100% !important;
       height: auto !important;
@@ -51,7 +51,8 @@
     #public-schedule-pdf,
     #public-print-table-content,
     #print-table-content,
-    #executive-print-content {
+    #executive-print-content,
+    #course-presentation-print {
       /* Remove forced display: block !important here */
       visibility: visible !important;
       position: relative !important;

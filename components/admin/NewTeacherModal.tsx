@@ -19,12 +19,14 @@ import { Input } from '../ui/Input';
 interface NewTeacherModalProps {
   courses: any[];
   isAdmin: boolean;
+  commonDisciplines: any[];
   onClose: () => void;
 }
 
-export function NewTeacherModal({ courses, isAdmin, onClose }: NewTeacherModalProps) {
+export function NewTeacherModal({ courses, isAdmin, commonDisciplines, onClose }: NewTeacherModalProps) {
   const [form, setForm] = useState({ 
     name: '', 
+    titulacao: '',
     email: '', 
     cpf: '', 
     phone: '', 
@@ -37,7 +39,7 @@ export function NewTeacherModal({ courses, isAdmin, onClose }: NewTeacherModalPr
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
-    if (!form.name) return;
+    if (!form.name || !form.titulacao) return;
     setSaving(true);
     try {
       await addDoc(collection(db, 'teachers'), {
@@ -69,6 +71,7 @@ export function NewTeacherModal({ courses, isAdmin, onClose }: NewTeacherModalPr
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input label="Nome Completo" placeholder="Ex: João Silva" value={form.name} onChange={(e: any) => setForm({...form, name: e.target.value})} />
+            <Input label="Titulação / Grau" placeholder="Ex: Mestre em Engenharia" value={form.titulacao} onChange={(e: any) => setForm({...form, titulacao: e.target.value})} />
             <Input label="E-mail (Opcional)" placeholder="joao@esuda.edu.br" value={form.email} onChange={(e: any) => setForm({...form, email: e.target.value})} />
             <Input label="CPF (Opcional)" placeholder="000.000.000-00" value={form.cpf} onChange={(e: any) => setForm({...form, cpf: e.target.value})} />
             <Input label="Telefone (Opcional)" placeholder="(00) 00000-0000" value={form.phone} onChange={(e: any) => setForm({...form, phone: e.target.value})} />
@@ -84,7 +87,7 @@ export function NewTeacherModal({ courses, isAdmin, onClose }: NewTeacherModalPr
             <div className="mb-6">
               <p className="text-[10px] sm:text-xs font-bold text-indigo-600 mb-2 uppercase">Disciplinas Comuns</p>
               <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                {COMMON_DISCIPLINES.map((disc: any) => {
+                {(commonDisciplines.length > 0 ? commonDisciplines : COMMON_DISCIPLINES).map((disc: any) => {
                   const isSelected = form.specialties?.some((s: any) => s.courseId === 'common' && s.disciplineName === disc.name);
                   return (
                     <button
@@ -139,7 +142,7 @@ export function NewTeacherModal({ courses, isAdmin, onClose }: NewTeacherModalPr
         </div>
         <div className="p-4 sm:p-6 border-t border-gray-200 bg-gray-50 flex justify-end gap-2 sm:gap-3 shrink-0">
           <Button variant="secondary" onClick={onClose}>Cancelar</Button>
-          <Button onClick={handleSave} disabled={saving || !form.name}>
+          <Button onClick={handleSave} disabled={saving || !form.name || !form.titulacao}>
             {saving ? 'Salvando...' : 'Criar Docente'}
           </Button>
         </div>

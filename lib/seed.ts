@@ -71,17 +71,17 @@ export const seedData = async (setActiveTab: (tab: string) => void) => {
         classTime: "08:00 - 18:00",
         duration: "10 meses",
         enrollmentPeriod: "Inscrições Abertas",
-        startDateInfo: "Abril de 2026",
+        startDateInfo: "31/01/2026",
         enrollmentStatus: "Abertas",
         websiteUrl: "https://esuda.edu.br/posgraduacao/gestao-de-projetos-e-obras-orcamento-e-pericia/",
         specificDisciplines: [
+          { name: "Técnicas de Coordenação e Compatibilização de Projetos", syllabus: "" },
           { name: "Técnicas de Orçamentos, Cobranças e Custos de Projetos", syllabus: "" },
           { name: "Técnicas de Orçamentos, Cobranças e Custos de Obras", syllabus: "" },
-          { name: "Técnicas de Coordenação e Compatibilização de Projetos", syllabus: "" },
           { name: "Técnicas de Planejamento e Coordenação de Obras", syllabus: "" },
-          { name: "Eficiência Energética e Sustentabilidade na Construção Civil", syllabus: "" },
           { name: "Lean Construction, Last Planner System e Logística de Canteiro", syllabus: "" },
           { name: "Engenharia de Segurança e Normas de Desempenho", syllabus: "" },
+          { name: "Eficiência Energética e Sustentabilidade na Construção Civil", syllabus: "" },
           { name: "Administração Contratual, Medições e Gestão de Pleitos (Claims)", syllabus: "" },
           { name: "Sistemas Informatizados de Gestão Integrada e BI (ERP, CDE e Power BI)", syllabus: "" }
         ]
@@ -97,19 +97,19 @@ export const seedData = async (setActiveTab: (tab: string) => void) => {
         classTime: "08:00 - 18:00",
         duration: "10 meses",
         enrollmentPeriod: "Inscrições Abertas",
-        startDateInfo: "Maio de 2026",
+        startDateInfo: "31/01/2026",
         enrollmentStatus: "Abertas",
         websiteUrl: "https://esuda.edu.br/posgraduacao/engenharia-e-gestao-da-manutencao-predial-na-construcao-4-0/",
         specificDisciplines: [
           { name: "Engenharia Diagnóstica: Terapia Predial e Plano de Intervenção", syllabus: "" },
           { name: "Patologias Construtivas em Estruturas e Sistemas de Envoltória", syllabus: "" },
           { name: "Manutenção Avançada em Instalações Prediais (Elétrica, Hidráulica, HVAC)", syllabus: "" },
-          { name: "CMMS e GMAO: Implementação de Sistemas de Gestão da Manutenção", syllabus: "" },
-          { name: "Manutenção Preditiva: IoT, Sensores Inteligentes e Automação Predial", syllabus: "" },
-          { name: "Termografia Infravermelha e Drones na Inspeção de Ativos", syllabus: "" },
-          { name: "Gestão de Ativos com BIM 7D (FM) e Orçamentação Preditiva", syllabus: "" },
           { name: "Engenharia Condominial e Gestão de Sistemas de Segurança e Transporte", syllabus: "" },
-          { name: "Gestão da Manutenção: Planejamento, KPIs e Conformidade Operacional", syllabus: "" }
+          { name: "Termografia Infravermelha e Drones na Inspeção de Ativos", syllabus: "" },
+          { name: "Manutenção Preditiva: IoT, Sensores Inteligentes e Automação Predial", syllabus: "" },
+          { name: "CMMS e GMAO: Implementação de Sistemas de Gestão da Manutenção", syllabus: "" },
+          { name: "Gestão da Manutenção: Planejamento, KPIs e Conformidade Operacional", syllabus: "" },
+          { name: "Gestão de Ativos com BIM 7D (FM) e Orçamentação Preditiva", syllabus: "" }
         ]
       },
       {
@@ -179,15 +179,15 @@ export const seedData = async (setActiveTab: (tab: string) => void) => {
         enrollmentStatus: "Abertas",
         websiteUrl: "https://esuda.edu.br/posgraduacao/tecnologia-bim-na-construcao-civil/",
         specificDisciplines: [
-          { name: "BIM - Conceituação Básica do Planejamento ao pós obra.", syllabus: "" },
-          { name: "Modelagem Arquitetônica", syllabus: "" },
-          { name: "Modelagem Paramétrica", syllabus: "" },
-          { name: "Modelagem Estrutural", syllabus: "" },
-          { name: "Modelagem das Instalações", syllabus: "" },
-          { name: "BIM no Planejamento e Orçamentação", syllabus: "" },
-          { name: "Gestão e Compatibilização de Projetos", syllabus: "" },
-          { name: "Colaboração e integração com CDE", syllabus: "" },
-          { name: "BIM, Análise de dados e IA", syllabus: "" }
+          { name: "BIM - CONCEITUAÇÃO BÁSICA DO PLANEJAMENTO AO PÓS OBRA.", syllabus: "" },
+          { name: "MODELAGEM ARQUITETÔNICA", syllabus: "" },
+          { name: "MODELAGEM PARAMÉTRICA", syllabus: "" },
+          { name: "MODELAGEM ESTRUTURAL", syllabus: "" },
+          { name: "MODELAGEM DAS INSTALAÇÕES", syllabus: "" },
+          { name: "BIM NO PLANEJAMENTO E ORÇAMENTAÇÃO", syllabus: "" },
+          { name: "GESTÃO E COMPATIBILIZAÇÃO DE PROJETOS", syllabus: "" },
+          { name: "COLABORAÇÃO E INTEGRAÇÃO COM CDE", syllabus: "" },
+          { name: "BIM, ANÁLISE DE DADOS E IA", syllabus: "" }
         ]
       },
       {
@@ -201,19 +201,19 @@ export const seedData = async (setActiveTab: (tab: string) => void) => {
         classTime: "08:00 - 18:00",
         duration: "10 meses",
         enrollmentPeriod: "Inscrições Abertas",
-        startDateInfo: "Setembro de 2026",
+        startDateInfo: "31/01/2026",
         enrollmentStatus: "Abertas",
         websiteUrl: "https://esuda.edu.br/posgraduacao/neuroarquitetura/",
         specificDisciplines: [
-          { name: "Neurociência Aplicada à Arquitetura", syllabus: "" },
-          { name: "Ritmo Biológico e Fatores Humanos", syllabus: "" },
-          { name: "Neuroarquitetura e Design Cognitivo", syllabus: "" },
-          { name: "Espaços Residenciais e Comerciais: Aplicações e Princípios da Neurarquitetura", syllabus: "" },
-          { name: "Espaços Coorporativos: Aplicações e Princípios da Neurarquitetura", syllabus: "" },
-          { name: "Estímulos e Percepções: Neuroarquitetura em Espaços Verdes", syllabus: "" },
-          { name: "Neuroiluminação", syllabus: "" },
-          { name: "Design Biofílico", syllabus: "" },
-          { name: "Neurourbanismo", syllabus: "" }
+          { name: "NEUROCIÊNCIA APLICADA À ARQUITETURA", syllabus: "" },
+          { name: "RITMO BIOLÓGICO E FATORES HUMANOS", syllabus: "" },
+          { name: "NEUROARQUITETURA E DESIGN COGNITIVO", syllabus: "" },
+          { name: "ESPAÇOS RESIDENCIAIS E COMERCIAIS: APLICAÇÕES E PRINCÍPIOS DA NEURARQUITETURA", syllabus: "" },
+          { name: "ESPAÇOS COORPORATIVOS: APLICAÇÕES E PRINCÍPIOS DA NEURARQUITETURA", syllabus: "" },
+          { name: "ESTÍMULOS E PERCEPÇÕES: NEUROARQUITETURA EM ESPAÇOS VERDES", syllabus: "" },
+          { name: "NEUROILUMINAÇÃO", syllabus: "" },
+          { name: "DESIGN BIOFÍLICO", syllabus: "" },
+          { name: "NEUROURBANISMO", syllabus: "" }
         ]
       }
     ];

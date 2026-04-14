@@ -23,9 +23,10 @@ import { COMMON_DISCIPLINES } from '@/lib/calendar';
 interface TeacherListGeneratorProps {
   courses: any[];
   teachers: any[];
+  commonDisciplines: any[];
 }
 
-export function TeacherListGenerator({ courses, teachers }: TeacherListGeneratorProps) {
+export function TeacherListGenerator({ courses, teachers, commonDisciplines }: TeacherListGeneratorProps) {
   const [reportMode, setReportMode] = useState<'course' | 'teacher'>('course');
   const [selectedCourseId, setSelectedCourseId] = useState('');
   const [selectedTeacherId, setSelectedTeacherId] = useState('');
@@ -96,7 +97,7 @@ export function TeacherListGenerator({ courses, teachers }: TeacherListGenerator
       
       // Combine common and specific disciplines
       const allDisciplines = [
-        ...COMMON_DISCIPLINES.map(d => d.name),
+        ...(commonDisciplines.length > 0 ? commonDisciplines : COMMON_DISCIPLINES).map(d => d.name),
         ...(course?.specificDisciplines || [])
       ];
 
@@ -143,7 +144,7 @@ export function TeacherListGenerator({ courses, teachers }: TeacherListGenerator
   };
 
   const allDisciplines = selectedCourse ? [
-    ...COMMON_DISCIPLINES.map(d => ({ name: d.name, syllabus: '', type: 'Comum' })),
+    ...(commonDisciplines.length > 0 ? commonDisciplines : COMMON_DISCIPLINES).map(d => ({ name: d.name, syllabus: d.description || '', type: 'Comum' })),
     ...(selectedCourse.specificDisciplines || []).map((d: any) => {
       const name = typeof d === 'string' ? d : d.name;
       const syllabus = typeof d === 'object' ? (d.syllabus || '') : '';

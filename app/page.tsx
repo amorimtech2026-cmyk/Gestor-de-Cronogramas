@@ -27,6 +27,7 @@ function DashboardContent() {
   const [courses, setCourses] = useState<any[]>([]);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [schedules, setSchedules] = useState<any[]>([]);
+  const [commonDisciplines, setCommonDisciplines] = useState<any[]>([]);
 
   // Fetch Data
   useEffect(() => {
@@ -43,12 +44,16 @@ function DashboardContent() {
     const unsubSchedules = onSnapshot(query(collection(db, 'schedules'), orderBy('createdAt', 'desc')), (snap) => {
       setSchedules(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
+    const unsubCommon = onSnapshot(query(collection(db, 'commonDisciplines'), orderBy('order', 'asc')), (snap) => {
+      setCommonDisciplines(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
 
     return () => {
       unsubTeachers();
       unsubCourses();
       unsubHolidays();
       unsubSchedules();
+      unsubCommon();
     };
   }, []);
 
@@ -61,6 +66,7 @@ function DashboardContent() {
         courses={courses} 
         holidays={holidays} 
         schedules={schedules} 
+        commonDisciplines={commonDisciplines}
         onLogin={login}
         isLoggingIn={isLoggingIn}
         user={user}
@@ -78,6 +84,7 @@ function DashboardContent() {
       courses={courses}
       holidays={holidays}
       schedules={schedules}
+      commonDisciplines={commonDisciplines}
       isAdmin={isAdmin}
       seedData={() => seedData(() => {})} // Pass a dummy setActiveTab if needed, or refactor seedData
     />

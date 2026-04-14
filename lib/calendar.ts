@@ -6,15 +6,15 @@ export interface Holiday {
 }
 
 export const COMMON_DISCIPLINES = [
-  { name: "Gestão de Escritórios de Arquitetura e Engenharia: Branding e Precificação", modality: "Presencial" },
-  { name: "Novas Fontes de Receita: Elaboração de Laudos e Perícias (EAD)", modality: "EAD" },
-  { name: "Solução Criativa de Problemas Complexos (Design Thinking) (EAD)", modality: "EAD" },
-  { name: "Práticas Simuladas: Estrutura Legal, Contábil e Empreendedorismo", modality: "Presencial" },
-  { name: "Negociação e Gestão de Conflitos (EAD)", modality: "EAD" },
-  { name: "Inteligência Artificial Aplicada", modality: "Presencial" },
-  { name: "Competências Estratégicas, Liderança e Alta Performance (EAD)", modality: "EAD" },
-  { name: "Marketing Pessoal e Digital para Arquitetos e Engenheiros", modality: "Presencial" },
-  { name: "Metodologia da Pesquisa e Didática do Ensino Superior (EAD)", modality: "EAD" }
+  { name: "GESTÃO DE ESCRITÓRIOS DE ARQUITETURA E ENGENHARIA: BRANDING E PRECIFICAÇÃO", modality: "Presencial" },
+  { name: "MARKETING PESSOAL E DIGITAL PARA ARQUITETOS E ENGENHEIROS", modality: "Presencial" },
+  { name: "METODOLOGIA DA PESQUISA E DIDÁTICA DO ENSINO SUPERIOR (EAD)", modality: "EAD" },
+  { name: "INTELIGÊNCIA ARTIFICIAL APLICADA", modality: "Presencial" },
+  { name: "COMPETÊNCIAS ESTRATÉGICAS, LIDERANÇA E ALTA PERFORMANCE (EAD)", modality: "EAD" },
+  { name: "PRÁTICAS SIMULADAS: ESTRUTURA LEGAL, CONTÁBIL E EMPREENDEDORISMO", modality: "Presencial" },
+  { name: "NOVAS FONTES DE RECEITA: ELABORAÇÃO DE LAUDOS E PERÍCIAS (EAD)", modality: "EAD" },
+  { name: "NEGOCIAÇÃO E GESTÃO DE CONFLITOS (EAD)", modality: "EAD" },
+  { name: "SOLUÇÃO CRIATIVA DE PROBLEMAS COMPLEXOS (DESIGN THINKING) (EAD)", modality: "EAD" }
 ];
 
 export const HOLIDAYS_2026: Holiday[] = [
@@ -281,7 +281,7 @@ export function generateFullScheduleWithOrder(
   // 0. Aula Inaugural
   schedule.push({
     date: format(currentSaturday, 'yyyy-MM-dd'),
-    disciplineName: "Aula Inaugural",
+    disciplineName: "AULA INAUGURAL",
     order: 0,
     isCommon: true,
     courseId: 'all',
@@ -290,9 +290,12 @@ export function generateFullScheduleWithOrder(
 
   currentSaturday = getNextAvailableSaturday(addDays(currentSaturday, 7), holidays);
 
-  // 1. Common Disciplines
-  for (let i = 0; i < commonDisciplines.length; i++) {
-    const discipline = commonDisciplines[i];
+  // 1. First 8 Common Disciplines
+  const first8Common = commonDisciplines.slice(0, 8);
+  const lastCommon = commonDisciplines[8];
+
+  for (let i = 0; i < first8Common.length; i++) {
+    const discipline = first8Common[i];
     
     // First Saturday
     schedule.push({
@@ -321,7 +324,7 @@ export function generateFullScheduleWithOrder(
     currentSaturday = getNextAvailableSaturday(addDays(currentSaturday, 7), holidays);
   }
 
-  // 2. Specific Disciplines
+  // 2. Specific Disciplines with Interleaved 9th Common
   const specificSchedules: Record<string, any[]> = {};
   coursesData.forEach(course => {
     specificSchedules[course.id] = [];
@@ -329,13 +332,14 @@ export function generateFullScheduleWithOrder(
     const disciplines = course.disciplines;
 
     for (let i = 0; i < disciplines.length; i++) {
+      // If it's the 1st specific discipline, we follow it with the 9th common discipline
       const disciplineName = disciplines[i];
       
-      // First Saturday
+      // First Saturday of Specific
       specificSchedules[course.id].push({
         date: format(courseSaturday, 'yyyy-MM-dd'),
         disciplineName: disciplineName,
-        order: i + commonDisciplines.length + 1,
+        order: i === 0 ? 9 : (i + 10), // 1st spec is 9, others start from 11
         classNumber: 1,
         isCommon: false,
         courseId: course.id,
@@ -344,11 +348,11 @@ export function generateFullScheduleWithOrder(
 
       courseSaturday = getNextAvailableSaturday(addDays(courseSaturday, 7), holidays);
 
-      // Second Saturday
+      // Second Saturday of Specific
       specificSchedules[course.id].push({
         date: format(courseSaturday, 'yyyy-MM-dd'),
         disciplineName: disciplineName,
-        order: i + commonDisciplines.length + 1,
+        order: i === 0 ? 9 : (i + 10),
         classNumber: 2,
         isCommon: false,
         courseId: course.id,
@@ -356,6 +360,35 @@ export function generateFullScheduleWithOrder(
       });
 
       courseSaturday = getNextAvailableSaturday(addDays(courseSaturday, 7), holidays);
+
+      // If we just finished the 1st specific discipline, insert the 9th common discipline
+      if (i === 0 && lastCommon) {
+        // First Saturday of 9th Common
+        specificSchedules[course.id].push({
+          date: format(courseSaturday, 'yyyy-MM-dd'),
+          disciplineName: lastCommon.name,
+          order: 10, // The 9th common discipline gets order 10
+          classNumber: 1,
+          isCommon: true,
+          courseId: 'all',
+          courseName: 'Fase Comum'
+        });
+
+        courseSaturday = getNextAvailableSaturday(addDays(courseSaturday, 7), holidays);
+
+        // Second Saturday of 9th Common
+        specificSchedules[course.id].push({
+          date: format(courseSaturday, 'yyyy-MM-dd'),
+          disciplineName: lastCommon.name,
+          order: 10,
+          classNumber: 2,
+          isCommon: true,
+          courseId: 'all',
+          courseName: 'Fase Comum'
+        });
+
+        courseSaturday = getNextAvailableSaturday(addDays(courseSaturday, 7), holidays);
+      }
     }
 
     // 3. Cerimônia de Encerramento

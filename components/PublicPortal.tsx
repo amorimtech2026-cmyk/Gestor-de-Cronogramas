@@ -24,6 +24,7 @@ interface PublicPortalProps {
   courses: any[];
   holidays: any[];
   schedules: any[];
+  commonDisciplines: any[];
   onLogin: () => void;
   isLoggingIn: boolean;
   user: any;
@@ -31,7 +32,7 @@ interface PublicPortalProps {
   initialScheduleId?: string | null;
 }
 
-export function PublicPortal({ teachers, courses, holidays, schedules, onLogin, isLoggingIn, user, logout, initialScheduleId }: PublicPortalProps) {
+export function PublicPortal({ teachers, courses, holidays, schedules, commonDisciplines, onLogin, isLoggingIn, user, logout, initialScheduleId }: PublicPortalProps) {
   const [selectedScheduleId, setSelectedScheduleId] = useState<string | null>(null);
   const [viewingCourseId, setViewingCourseId] = useState<string | null>(null);
 
@@ -275,6 +276,7 @@ export function PublicPortal({ teachers, courses, holidays, schedules, onLogin, 
             course={viewingCourse} 
             teachers={teachers}
             schedules={schedules}
+            commonDisciplines={commonDisciplines}
             onClose={() => setViewingCourseId(null)} 
           />
         )}

@@ -43,10 +43,11 @@ interface NewScheduleModalProps {
   courses: any[];
   holidays: any[];
   teachers: any[];
+  commonDisciplines: any[];
   onClose: () => void;
 }
 
-export function NewScheduleModal({ courses, holidays, teachers, onClose }: NewScheduleModalProps) {
+export function NewScheduleModal({ courses, holidays, teachers, commonDisciplines, onClose }: NewScheduleModalProps) {
   const [step, setStep] = useState(1);
   const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
   const [startDate, setStartDate] = useState('');
@@ -54,7 +55,9 @@ export function NewScheduleModal({ courses, holidays, teachers, onClose }: NewSc
   const [preview, setPreview] = useState<any>(null);
   
   // Discipline ordering state
-  const [commonOrder, setCommonOrder] = useState<any[]>(COMMON_DISCIPLINES.map((d, i) => ({ ...d, id: `common-${i}` })));
+  const [commonOrder, setCommonOrder] = useState<any[]>(
+    (commonDisciplines.length > 0 ? commonDisciplines : COMMON_DISCIPLINES).map((d, i) => ({ ...d, id: `common-${i}` }))
+  );
   const [specificOrders, setSpecificOrders] = useState<Record<string, any[]>>({});
 
   const sensors = useSensors(
@@ -285,7 +288,7 @@ export function NewScheduleModal({ courses, holidays, teachers, onClose }: NewSc
                               <SortableItem key={d.id} id={d.id}>
                                 <div className="p-3 bg-white border border-gray-200 rounded-lg flex items-center gap-3 sm:gap-4 pl-8 sm:pl-10 relative">
                                   <Menu className="w-4 h-4 text-gray-300 absolute left-3 top-1/2 -translate-y-1/2" />
-                                  <span className="text-[10px] sm:text-xs font-bold text-gray-400 w-4">{specificOrders[courseId].indexOf(d) + COMMON_DISCIPLINES.length + 1}</span>
+                                  <span className="text-[10px] sm:text-xs font-bold text-gray-400 w-4">{specificOrders[courseId].indexOf(d) + commonOrder.length + 1}</span>
                                   <p className="text-sm font-medium truncate">{d.name}</p>
                                 </div>
                               </SortableItem>
