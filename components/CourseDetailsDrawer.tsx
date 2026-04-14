@@ -36,11 +36,42 @@ export function CourseDetailsDrawer({ course, teachers, schedules, commonDiscipl
 
   const activeSchedules = schedules.filter((s: any) => s.courseIds.includes(course.id) && s.status === 'active');
   
+  // Safe date formatting helper to avoid timezone shifts
+  const formatSafeDate = (dateVal: string | number | Date) => {
+    if (!dateVal) return 'A definir';
+    try {
+      if (typeof dateVal === 'string' && dateVal.length === 10 && dateVal.includes('-')) {
+        const [y, m, d] = dateVal.split('-');
+        return `${d}/${m}/${y}`;
+      }
+      const d = new Date(dateVal);
+      d.setHours(12);
+      return format(d, 'dd/MM/yyyy', { locale: ptBR });
+    } catch (e) {
+      return 'Data inválida';
+    }
+  };
+
   // Use teachers prop directly as requested, but we can still filter by specialties if we want to be helpful,
   // however the instruction says "removendo filtros complexos". 
   // Let's filter by those who have this course in their specialties to keep it relevant.
   const courseTeachers = teachers.filter(t => 
-    t.specialties?.some((s: any) => s.courseId === course.id)
+    t.specialties?.some((s: any) => {
+      // Direct course match
+      if (s.courseId === course.id) return true;
+      
+      // Common trunk match
+      if (s.courseId === 'common' || s.courseId === 'tronco-comum') return true;
+      
+      // Name-based match for common disciplines
+      const commonNames = (commonDisciplines.length > 0 ? commonDisciplines : COMMON_DISCIPLINES)
+        .map((d: any) => (d.name || '').toLowerCase().trim());
+      const specName = (s.disciplineName || s.name || '').toLowerCase().trim();
+      
+      if (specName && commonNames.includes(specName)) return true;
+
+      return false;
+    })
   );
 
   // Helper to get initials
@@ -159,14 +190,14 @@ export function CourseDetailsDrawer({ course, teachers, schedules, commonDiscipl
           </div>
         </div>
 
-        {/* Header - Print Version */}
-        <div className="hidden print:block space-y-6">
-          <div className="h-64 w-full relative">
+        {/* Header Print Version */}
+        <div className="hidden print:block mb-8">
+          <div className="relative w-[calc(100%+2cm)] h-64 -ml-[1cm] -mt-[1cm] mb-6 overflow-hidden bg-indigo-50">
             <Image 
               src={course.imageUrl || `https://picsum.photos/seed/${course.id}/800/600`}
               alt={course.name}
               fill
-              className="object-contain max-h-64"
+              className="object-cover object-center"
               referrerPolicy="no-referrer"
             />
           </div>
@@ -340,18 +371,31 @@ export function CourseDetailsDrawer({ course, teachers, schedules, commonDiscipl
             <div className="space-y-4 break-inside-avoid">
               <h3 className="text-lg font-bold text-gray-900 border-l-4 border-indigo-600 pl-4">Turmas em Andamento</h3>
               <div className="space-y-2">
-                {activeSchedules.map((s: any) => (
-                  <div key={s.id} className="p-4 bg-indigo-600 text-white rounded-2xl flex justify-between items-center shadow-lg shadow-indigo-200 print:bg-white print:text-slate-900 print:border print:border-slate-200 print:shadow-none">
-                    <div>
-                      <p className="text-xs font-bold text-indigo-200 uppercase tracking-wider print:text-slate-400">Turma</p>
-                      <p className="font-bold">{s.className}</p>
+                {activeSchedules.map((s: any) => {
+                  const statusMap: Record<string, string> = {
+                    'active': 'Em Andamento',
+                    'planned': 'Planejada',
+                    'completed': 'Concluída'
+                  };
+                  const statusLabel = statusMap[s.status] || s.status || 'Ativa';
+
+                  return (
+                    <div key={s.id} className="p-4 bg-indigo-600 text-white rounded-2xl flex justify-between items-center shadow-lg shadow-indigo-200 print:bg-white print:text-slate-900 print:border print:border-slate-200 print:shadow-none">
+                      <div className="flex-1">
+                        <p className="text-xs font-bold text-indigo-200 uppercase tracking-wider print:text-slate-400">Turma</p>
+                        <p className="font-bold text-sm">{s.className}</p>
+                      </div>
+                      <div className="flex-1 text-center">
+                        <p className="text-xs font-bold text-indigo-200 uppercase tracking-wider print:text-slate-400">Status</p>
+                        <p className="font-bold text-sm bg-indigo-500/50 print:bg-slate-100 print:text-slate-700 px-2 py-0.5 rounded inline-block">{statusLabel}</p>
+                      </div>
+                      <div className="flex-1 text-right">
+                        <p className="text-xs font-bold text-indigo-200 uppercase tracking-wider print:text-slate-400">Início</p>
+                        <p className="font-bold text-sm">{formatSafeDate(s.startDate)}</p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-xs font-bold text-indigo-200 uppercase tracking-wider print:text-slate-400">Início</p>
-                      <p className="font-bold">{format(new Date(s.startDate), 'dd/MM/yyyy', { locale: ptBR })}</p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -365,6 +409,14 @@ export function CourseDetailsDrawer({ course, teachers, schedules, commonDiscipl
             >
               Quero me inscrever agora
             </a>
+          </div>
+          {/* Footer Print Version */}
+          <div className="hidden print:flex flex-col items-center justify-center mt-12 pt-6 pb-8 border-t border-slate-200 text-slate-500 text-[10px] text-center space-y-1 break-inside-avoid">
+            <p className="font-black uppercase tracking-widest text-indigo-900">Apresentação do curso {course.name}</p>
+            <p className="font-bold">Faculdade ESUDA | https://esuda.edu.br/ | (81) 3412-4242</p>
+            <p className="font-semibold text-slate-700 mt-2">Emanoel Silva de Amorim</p>
+            <p>Coordenação das Especializações em Arquitetura e Engenharia</p>
+            <p>email: emanoel@esuda.edu.br | Contatos: (081) 9.9129-8803 / (081) 9.9928-4160</p>
           </div>
         </div>
       </motion.div>
