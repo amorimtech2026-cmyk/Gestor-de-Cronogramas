@@ -101,7 +101,6 @@ export function ScheduleDetailsModal({ schedule, courses, teachers, isAdmin, onC
     const q = query(collection(db, 'classes'), where('scheduleId', '==', schedule.id));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      // Sort in memory by date to ensure all classes are fetched even if date is missing
       const sortedData = [...data].sort((a: any, b: any) => {
         if (!a.date) return 1;
         if (!b.date) return -1;
@@ -109,7 +108,6 @@ export function ScheduleDetailsModal({ schedule, courses, teachers, isAdmin, onC
       });
       setClasses(sortedData);
       
-      // Only update editedClasses if NOT currently editing to avoid losing unsaved changes
       if (!isEditing) {
         setEditedClasses(sortedData);
         setEditedClassName(schedule.className || '');
@@ -118,7 +116,6 @@ export function ScheduleDetailsModal({ schedule, courses, teachers, isAdmin, onC
       setLoading(false);
     }, (e) => handleFirestoreError(e, OperationType.GET, 'classes'));
 
-    // Fetch all other classes for conflict detection
     const fetchAllClasses = async () => {
       try {
         const qAll = query(collection(db, 'classes'), where('date', '>=', schedule.startDate));
@@ -159,7 +156,6 @@ export function ScheduleDetailsModal({ schedule, courses, teachers, isAdmin, onC
     setSyncing(true);
     try {
       await syncTeacherAssignments();
-      // The onSnapshot will update the local state automatically
     } catch (e) {
       console.error("Error syncing:", e);
     } finally {
@@ -170,13 +166,11 @@ export function ScheduleDetailsModal({ schedule, courses, teachers, isAdmin, onC
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      // Delete all classes
       const q = query(collection(db, 'classes'), where('scheduleId', '==', schedule.id));
       const snap = await getDocs(q);
       const deletePromises = snap.docs.map(d => deleteDoc(doc(db, 'classes', d.id)));
       await Promise.all(deletePromises);
 
-      // Delete schedule
       await deleteDoc(doc(db, 'schedules', schedule.id));
       onClose();
     } catch (e) {
@@ -203,7 +197,6 @@ export function ScheduleDetailsModal({ schedule, courses, teachers, isAdmin, onC
         return updateDoc(doc(db, 'classes', c.id), updateData);
       });
       
-      // Propagate course name changes globally if changed
       const courseNameChanges = new Map();
       editedClasses.forEach(c => {
         if (!c.isCommon && c.courseId && c.courseName) {
@@ -220,11 +213,9 @@ export function ScheduleDetailsModal({ schedule, courses, teachers, isAdmin, onC
       
       await Promise.all(promises);
 
-      // Update schedule lastUpdated and metadata
       const scheduleCourseNames = schedule.courseIds.map((cid: string) => {
         const course = courses.find((co: any) => co.id === cid);
         if (course) return course.name;
-        // Try to find in editedClasses
         const classWithCourse = editedClasses.find(c => c.courseId === cid && c.courseName);
         if (classWithCourse) return classWithCourse.courseName;
         return cid;
@@ -252,20 +243,13 @@ export function ScheduleDetailsModal({ schedule, courses, teachers, isAdmin, onC
       alert("Nenhum feriado carregado. Por favor, carregue os feriados na aba 'Feriados' primeiro.");
       return;
     }
-
-    console.log("Recalculating dates with", holidays.length, "holidays");
     
-    // Get all unique orders present in this schedule
     const sortedOrders = Array.from(new Set(editedClasses.map(c => c.order))).sort((a, b) => a - b);
-    
-    // Start from the edited start date
     let currentSat = getNextAvailableSaturday(parseISO(editedStartDate), holidays);
     
     const orderDates = new Map();
     sortedOrders.forEach(order => {
       const classesInThisOrder = editedClasses.filter(c => c.order === order);
-      
-      // Check the max classNumber in this order to decide if it needs 1 or 2 Saturdays
       const maxClassNumber = Math.max(...classesInThisOrder.map(c => c.classNumber || 1));
       
       const date1 = format(currentSat, 'yyyy-MM-dd');
@@ -284,7 +268,6 @@ export function ScheduleDetailsModal({ schedule, courses, teachers, isAdmin, onC
       const dates = orderDates.get(c.order);
       if (!dates) return c;
 
-      // Find the position of this class within its order/course group to determine classNumber if missing
       const courseClasses = editedClasses
         .filter(oc => oc.order === c.order && oc.courseId === c.courseId)
         .sort((a, b) => {
@@ -305,7 +288,6 @@ export function ScheduleDetailsModal({ schedule, courses, teachers, isAdmin, onC
 
     setEditedClasses(updatedClasses);
     
-    // Visual feedback
     const btn = document.activeElement as HTMLButtonElement;
     if (btn && btn.innerText.includes("Ajustar")) {
       const originalContent = btn.innerHTML;
@@ -331,17 +313,12 @@ export function ScheduleDetailsModal({ schedule, courses, teachers, isAdmin, onC
       if (oldIndex !== -1 && newIndex !== -1) {
         const newOrderSequence = arrayMove(orders, oldIndex, newIndex);
 
-        // Recalculate dates based on new order and edited start date
         let currentSat = getNextAvailableSaturday(parseISO(editedStartDate), holidays);
         const updatedClasses = [...editedClasses];
 
         newOrderSequence.forEach((orderValue) => {
           const classesInThisOrder = updatedClasses.filter(c => c.order === orderValue);
-          
-          // Each order has 2 dates (Sat 1 and Sat 2) unless it's a single session event
-          // We need to handle single session events (Aula Inaugural, Encerramento)
           const isSingleSession = classesInThisOrder.length === 1;
-          
           const date1 = format(currentSat, 'yyyy-MM-dd');
           
           if (isSingleSession) {
@@ -353,7 +330,6 @@ export function ScheduleDetailsModal({ schedule, courses, teachers, isAdmin, onC
             currentSat = getNextAvailableSaturday(addDays(currentSat, 7), holidays);
 
             classesInThisOrder.forEach(c => {
-              // Find which class number it is (1 or 2)
               const sortedGroup = updatedClasses
                 .filter(oc => oc.order === orderValue && oc.courseId === c.courseId)
                 .sort((a, b) => {
@@ -366,10 +342,9 @@ export function ScheduleDetailsModal({ schedule, courses, teachers, isAdmin, onC
           }
         });
 
-        // Update order values to match the new sequence (1-indexed for simplicity, but keeping 0 for inaugural if it's at top)
         const orderMap = new Map();
         newOrderSequence.forEach((oldOrder, idx) => {
-          orderMap.set(oldOrder, idx); // Using 0-based index for internal order
+          orderMap.set(oldOrder, idx);
         });
 
         updatedClasses.forEach(c => {
@@ -411,14 +386,24 @@ export function ScheduleDetailsModal({ schedule, courses, teachers, isAdmin, onC
     }));
   };
 
+  // Nova função para mover apenas a disciplina específica selecionada para um novo bloco
+  const updateDisciplineOrder = (currentOrder: number, courseId: string | undefined, isCommon: boolean, disciplineName: string, newOrder: number) => {
+    setEditedClasses(prev => prev.map(c => {
+      if (c.order === currentOrder && !!c.isCommon === !!isCommon && c.disciplineName === disciplineName) {
+        if (isCommon || c.courseId === courseId) {
+          return { ...c, order: newOrder };
+        }
+      }
+      return c;
+    }));
+  };
+
   const deleteClassOrder = (order: number) => {
     setEditedClasses(prev => prev.filter(c => c.order !== order));
   };
 
   useEffect(() => {
-    const handleAfterPrint = () => {
-      // No need to reset printMode immediately, but good for cleanup if needed
-    };
+    const handleAfterPrint = () => {};
     window.addEventListener('afterprint', handleAfterPrint);
     return () => window.removeEventListener('afterprint', handleAfterPrint);
   }, []);
@@ -433,7 +418,6 @@ export function ScheduleDetailsModal({ schedule, courses, teachers, isAdmin, onC
     setTimeout(() => window.print(), 300);
   };
 
-  // Group by order for the sequence view
   const groupedByOrder = editedClasses.reduce((acc: any, c: any) => {
     const orderKey = c.order || 0;
     if (!acc[orderKey]) acc[orderKey] = [];
@@ -454,7 +438,6 @@ export function ScheduleDetailsModal({ schedule, courses, teachers, isAdmin, onC
         animate={{ scale: 1, opacity: 1 }}
         className="bg-white rounded-2xl w-full max-w-5xl h-[92vh] sm:h-[90vh] overflow-hidden flex flex-col shadow-2xl print-modal relative print:h-auto print:overflow-visible print:shadow-none print:rounded-none print:static print:block"
       >
-        {/* Floating Save Notification for Mobile */}
         <AnimatePresence>
           {hasUnsavedChanges && isEditing && (
             <motion.div 
@@ -600,7 +583,6 @@ export function ScheduleDetailsModal({ schedule, courses, teachers, isAdmin, onC
         </div>
 
         <div id="schedule-content" className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-8 space-y-10 bg-slate-50 print:overflow-visible print:h-auto print:bg-white print:p-0 print:min-h-auto">
-          {/* Standard Print Table */}
           <div id="print-table-content" className={`${printMode === 'standard' ? 'print-show' : 'print:hidden'} hidden bg-white text-black font-sans`}>
             <div className="mb-10 border-b-4 border-slate-900 pb-6">
               <div className="flex justify-between items-start">
@@ -701,7 +683,6 @@ export function ScheduleDetailsModal({ schedule, courses, teachers, isAdmin, onC
               </div>
             </div>
 
-            {/* Grid of Cards (Balloons) - Matching Public Interface */}
             <div className="grid grid-cols-3 gap-4">
               {(() => {
                 const sortedClasses = [...editedClasses].sort((a, b) => a.date.localeCompare(b.date));
@@ -848,20 +829,34 @@ export function ScheduleDetailsModal({ schedule, courses, teachers, isAdmin, onC
                                           </span>
                                           {isEditing ? (
                                             <div className="space-y-2">
-                                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                                <Input 
-                                                  label="Disciplina/Evento"
-                                                  value={c.disciplineName} 
-                                                  onChange={(e: any) => updateClassField(order, 'disciplineName', e.target.value, c.isCommon ? undefined : c.courseId)}
-                                                  className="bg-white"
-                                                />
-                                                <Input 
-                                                  label="Data"
-                                                  type="date"
-                                                  value={c.date} 
-                                                  onChange={(e: any) => updateClassField(order, 'date', e.target.value, c.isCommon ? undefined : c.courseId)}
-                                                  className="bg-white"
-                                                />
+                                              <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                                                <div className="sm:col-span-6">
+                                                  <Input 
+                                                    label="Disciplina/Evento"
+                                                    value={c.disciplineName} 
+                                                    onChange={(e: any) => updateClassField(order, 'disciplineName', e.target.value, c.isCommon ? undefined : c.courseId)}
+                                                    className="bg-white"
+                                                  />
+                                                </div>
+                                                <div className="sm:col-span-3">
+                                                  <Input 
+                                                    label="Data"
+                                                    type="date"
+                                                    value={c.date} 
+                                                    onChange={(e: any) => updateClassField(order, 'date', e.target.value, c.isCommon ? undefined : c.courseId)}
+                                                    className="bg-white"
+                                                  />
+                                                </div>
+                                                <div className="sm:col-span-3">
+                                                  <Input 
+                                                    label="Posição/Bloco"
+                                                    type="number"
+                                                    min="0"
+                                                    value={c.order}
+                                                    onChange={(e: any) => updateDisciplineOrder(order, c.courseId, !!c.isCommon, c.disciplineName, Number(e.target.value))}
+                                                    className="bg-white font-black text-indigo-600"
+                                                  />
+                                                </div>
                                               </div>
                                               <Input 
                                                 label="Observação (Opcional)"
@@ -887,27 +882,6 @@ export function ScheduleDetailsModal({ schedule, courses, teachers, isAdmin, onC
                                           ))}
                                         </div>
                                       </div>
-                                      
-                                      {isEditing && classGroup.length > 1 && (
-                                        <div className="mt-3 flex justify-end">
-                                          <Button 
-                                            variant="ghost" 
-                                            size="sm" 
-                                            className="h-7 text-[10px] text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50"
-                                            onClick={() => {
-                                              const maxOrder = Math.max(...editedClasses.map((cl: any) => cl.order || 0));
-                                              const newOrder = maxOrder + 1;
-                                              setEditedClasses(prev => prev.map(cl => 
-                                                (cl.order === order && (c.isCommon ? cl.isCommon : cl.courseId === c.courseId)) 
-                                                ? { ...cl, order: newOrder } 
-                                                : cl
-                                              ));
-                                            }}
-                                          >
-                                            Mover para nova posição
-                                          </Button>
-                                        </div>
-                                      )}
                                     </div>
                                   ))}
                                 </div>
