@@ -33,6 +33,9 @@ export function CourseDetailsDrawer({ course, teachers, schedules, commonDiscipl
   const [showSyllabus, setShowSyllabus] = useState(true);
   const [showTeachers, setShowTeachers] = useState(true);
   const [showSchedules, setShowSchedules] = useState(true);
+  const [showApps, setShowApps] = useState(false);
+  const [showIncubator, setShowIncubator] = useState(false);
+  const [showInfrastructure, setShowInfrastructure] = useState(false);
 
   const activeSchedules = schedules.filter((s: any) => s.courseIds.includes(course.id) && s.status === 'active');
   
@@ -165,6 +168,27 @@ export function CourseDetailsDrawer({ course, teachers, schedules, commonDiscipl
                   <input type="checkbox" className="hidden" checked={showSchedules} onChange={() => setShowSchedules(!showSchedules)} />
                   <span className="text-[9px] font-black uppercase tracking-widest text-slate-600">Turmas</span>
                 </label>
+                <label className="flex items-center gap-2 cursor-pointer group">
+                  <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${showApps ? 'bg-indigo-600 border-indigo-600' : 'bg-white border-slate-300'}`}>
+                    {showApps && <Check className="w-2.5 h-2.5 text-white" />}
+                  </div>
+                  <input type="checkbox" className="hidden" checked={showApps} onChange={() => setShowApps(!showApps)} />
+                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-600">Apps</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer group">
+                  <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${showIncubator ? 'bg-indigo-600 border-indigo-600' : 'bg-white border-slate-300'}`}>
+                    {showIncubator && <Check className="w-2.5 h-2.5 text-white" />}
+                  </div>
+                  <input type="checkbox" className="hidden" checked={showIncubator} onChange={() => setShowIncubator(!showIncubator)} />
+                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-600">Incubadora</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer group">
+                  <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${showInfrastructure ? 'bg-indigo-600 border-indigo-600' : 'bg-white border-slate-300'}`}>
+                    {showInfrastructure && <Check className="w-2.5 h-2.5 text-white" />}
+                  </div>
+                  <input type="checkbox" className="hidden" checked={showInfrastructure} onChange={() => setShowInfrastructure(!showInfrastructure)} />
+                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-600">Infra</span>
+                </label>
               </div>
               <button 
                 onClick={() => window.print()}
@@ -270,11 +294,54 @@ export function CourseDetailsDrawer({ course, teachers, schedules, commonDiscipl
 
           {/* Marketing Text */}
           <div className="space-y-4">
-            <h3 className="text-lg font-bold text-gray-900 border-l-4 border-indigo-600 pl-4">Sobre o Curso</h3>
-            <div className="text-gray-600 text-sm leading-relaxed space-y-4 whitespace-pre-wrap text-justify">
+            <h3 className="text-lg font-black text-slate-900 border-l-4 border-indigo-600 pl-4 uppercase tracking-tight">Sobre o Curso</h3>
+            <div className="text-gray-600 text-sm leading-relaxed space-y-4 whitespace-pre-wrap text-justify font-regular">
               {course.fullDescription || course.marketingSummary || 'Descrição detalhada em breve.'}
             </div>
           </div>
+
+          {/* Apps Educacionais Section */}
+          {showApps && (
+            <div className="space-y-6 break-inside-avoid">
+              <h3 className="text-lg font-black text-slate-900 border-l-4 border-indigo-600 pl-4 uppercase tracking-tight">Apps Educacionais: Predial & GPO</h3>
+              <div className="grid grid-cols-1 gap-4">
+                <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 flex flex-col md:flex-row gap-6 items-center shadow-sm break-inside-avoid">
+                  <div className="relative w-full md:w-48 h-32 shrink-0 rounded-xl overflow-hidden border border-slate-200">
+                    <Image src="https://i.postimg.cc/jSPpBHzn/predial.png" alt="App Predial" fill className="object-cover" referrerPolicy="no-referrer" />
+                  </div>
+                  <div className="space-y-2">
+                    <h4 className="font-bold text-slate-900 uppercase text-xs tracking-wider">Aplicativo Educacional Predial 4.0</h4>
+                    <p className="text-xs text-slate-600 leading-relaxed text-justify">
+                      Plano Interativo para Inspeção, Diagnóstico e Manutenção Predial. Uma ferramenta projetada para transformar o denso conteúdo teórico em uma experiência de aprendizado clara, prática e navegável.
+                    </p>
+                  </div>
+                </div>
+                <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 flex flex-col md:flex-row gap-6 items-center shadow-sm break-inside-avoid">
+                  <div className="relative w-full md:w-48 h-32 shrink-0 rounded-xl overflow-hidden border border-slate-200">
+                    <Image src="https://i.postimg.cc/RZKk27c6/gpo.png" alt="App GPO" fill className="object-cover" referrerPolicy="no-referrer" />
+                  </div>
+                  <div className="space-y-2">
+                    <h4 className="font-bold text-slate-900 uppercase text-xs tracking-wider">Ecossistema Digital GPO 4.0</h4>
+                    <p className="text-xs text-slate-600 leading-relaxed text-justify">
+                      A Convergência entre Gestão, Modelagem da Informação e Inteligência Artificial. Uma plataforma desenvolvida para revolucionar a forma como o profissional aprende e aplica a engenharia.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Incubadora Profissional Section */}
+          {showIncubator && (
+            <div className="space-y-4 break-inside-avoid">
+              <h3 className="text-lg font-black text-slate-900 border-l-4 border-indigo-600 pl-4 uppercase tracking-tight">Incubadora Profissional</h3>
+              <div className="bg-indigo-50/30 p-6 rounded-2xl border border-indigo-100 shadow-sm break-inside-avoid">
+                <p className="text-sm text-slate-700 leading-relaxed text-justify font-medium">
+                  Iniciativa exclusiva de pesquisa e extensão que conecta nossos alunos diretamente ao mercado de trabalho por meio de projetos práticos com empresas parceiras. Nosso programa acelera a inserção profissional e garante vivência real na resolução de desafios complexos da construção civil e da arquitetura.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Disciplines */}
           {showDisciplines && (
@@ -369,7 +436,7 @@ export function CourseDetailsDrawer({ course, teachers, schedules, commonDiscipl
           {/* Active Classes */}
           {showSchedules && activeSchedules.length > 0 && (
             <div className="space-y-4 break-inside-avoid">
-              <h3 className="text-lg font-bold text-gray-900 border-l-4 border-indigo-600 pl-4">Turmas em Andamento</h3>
+              <h3 className="text-lg font-black text-slate-900 border-l-4 border-indigo-600 pl-4 uppercase tracking-tight">Turmas em Andamento</h3>
               <div className="space-y-2">
                 {activeSchedules.map((s: any) => {
                   const statusMap: Record<string, string> = {
@@ -380,7 +447,7 @@ export function CourseDetailsDrawer({ course, teachers, schedules, commonDiscipl
                   const statusLabel = statusMap[s.status] || s.status || 'Ativa';
 
                   return (
-                    <div key={s.id} className="p-4 bg-indigo-600 text-white rounded-2xl flex justify-between items-center shadow-lg shadow-indigo-200 print:bg-white print:text-slate-900 print:border print:border-slate-200 print:shadow-none">
+                    <div key={s.id} className="p-4 bg-indigo-600 text-white rounded-2xl flex justify-between items-center shadow-lg shadow-indigo-200 print:bg-white print:text-slate-900 print:border print:border-slate-200 print:shadow-none break-inside-avoid">
                       <div className="flex-1">
                         <p className="text-xs font-bold text-indigo-200 uppercase tracking-wider print:text-slate-400">Turma</p>
                         <p className="font-bold text-sm">{s.className}</p>
@@ -396,6 +463,29 @@ export function CourseDetailsDrawer({ course, teachers, schedules, commonDiscipl
                     </div>
                   );
                 })}
+              </div>
+            </div>
+          )}
+
+          {/* Infrastructure Section */}
+          {showInfrastructure && (
+            <div className="space-y-6 break-inside-avoid">
+              <h3 className="text-lg font-black text-slate-900 border-l-4 border-indigo-600 pl-4 uppercase tracking-tight">Infraestrutura de Excelência da Faculdade</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {[
+                  { url: "https://i.postimg.cc/FKQ8NMTR/fachada-esuda.jpg", label: "Fachada Principal" },
+                  { url: "https://i.postimg.cc/5tqG0sr4/Biblioteca.jpg", label: "Biblioteca" },
+                  { url: "https://i.postimg.cc/5tqG0srF/laboratorio-construcao-civil1.jpg", label: "Lab. Construção Civil" },
+                  { url: "https://i.postimg.cc/pdY7TsSF/laboratorio-ensaios-arquitetura-civil1.jpg", label: "Lab. Ensaios" },
+                  { url: "https://i.postimg.cc/PqzcxS7L/sala-de-arquitetura-desenho.jpg", label: "Salas de Arquitetura" }
+                ].map((img, idx) => (
+                  <div key={idx} className="relative aspect-video rounded-xl overflow-hidden border border-slate-200 shadow-sm break-inside-avoid">
+                    <Image src={img.url} alt={img.label} fill className="object-cover" referrerPolicy="no-referrer" />
+                    <div className="absolute bottom-0 left-0 right-0 bg-black/50 p-1.5">
+                      <p className="text-[8px] font-bold text-white uppercase text-center tracking-widest">{img.label}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
